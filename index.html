@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dorisk 🎀 La Canción del Día</title>
+    <meta name="description" content="Comparte tu canción del día con tus amigos. Solo una por persona, cada 24 horas.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;500;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- ══════════════════════ LOGIN SCREEN ══════════════════════ -->
+    <div id="login-screen">
+        <div class="login-glow"></div>
+
+        <!-- Pixel particles dentro del login -->
+        <div id="login-particles" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>
+
+        <div class="login-box">
+
+            <!-- Logo -->
+            <div class="login-logo">DORISK</div>
+            <div class="login-sub"></div>
+
+            <!-- Pixel mascot -->
+            <img src="char.png" class="login-char" alt="Dorisk" draggable="false"
+                onerror="this.style.fontSize='48px';this.style.background='none';this.outerHTML='<div style=\'font-size:48px;margin:0 auto 20px;display:block;text-align:center;\'>🎀</div>';">
+
+            <!-- Tabs -->
+            <div class="login-tabs">
+                <button class="login-tab active" id="tab-login" onclick="switchTab('login')">ENTRAR</button>
+                <button class="login-tab" id="tab-register" onclick="switchTab('register')">REGISTRARSE</button>
+            </div>
+
+            <!-- Error msg -->
+            <div class="login-error" id="login-error">▸ USUARIO O CONTRASEÑA INCORRECTOS</div>
+
+            <!-- ── Panel: LOGIN ── -->
+            <div class="login-panel active" id="panel-login">
+                <div class="login-field">
+                    <label class="login-field-label">▸ USUARIO</label>
+                    <input type="text" class="login-input" id="login-user" placeholder="tu nombre de usuario"
+                        autocomplete="username">
+                </div>
+                <div class="login-field">
+                    <label class="login-field-label">▸ CONTRASEÑA</label>
+                    <input type="password" class="login-input" id="login-pass" placeholder="••••••••"
+                        autocomplete="current-password">
+                </div>
+                <button class="btn-login" id="btn-login" onclick="handleLogin()">
+                    <span>[ ENTRAR ]</span>
+                </button>
+
+                <div class="login-divider">
+                    <div class="login-divider-line"></div>
+                    <span class="login-divider-txt">O</span>
+                    <div class="login-divider-line"></div>
+                </div>
+
+                <button class="btn-google" onclick="handleGoogleLogin()">
+                    <svg width="16" height="16" viewBox="0 0 16 16" style="image-rendering:pixelated">
+                        <rect x="7" y="1" width="5" height="2" fill="#4285f4" />
+                        <rect x="12" y="3" width="2" height="2" fill="#4285f4" />
+                        <rect x="13" y="5" width="2" height="3" fill="#4285f4" />
+                        <rect x="8" y="8" width="5" height="2" fill="#4285f4" />
+                        <rect x="2" y="5" width="11" height="1" fill="rgba(0,0,0,0)" />
+                        <rect x="1" y="6" width="2" height="4" fill="#34a853" />
+                        <rect x="3" y="10" width="3" height="2" fill="#fbbc05" />
+                        <rect x="6" y="12" width="4" height="2" fill="#ea4335" />
+                        <rect x="10" y="10" width="3" height="2" fill="#ea4335" />
+                        <rect x="13" y="7" width="2" height="3" fill="#4285f4" />
+                    </svg>
+                    CONTINUAR CON GOOGLE
+                </button>
+
+                <div class="login-register">
+                    ¿No tienes cuenta? <a href="#" onclick="switchTab('register');return false;">CREAR UNA</a>
+                </div>
+            </div>
+
+            <!-- ── Panel: REGISTER ── -->
+            <div class="login-panel" id="panel-register">
+                <div class="login-field">
+                    <label class="login-field-label">▸ NOMBRE DE USUARIO</label>
+                    <input type="text" class="login-input" id="reg-user" placeholder="elige tu nombre"
+                        autocomplete="username">
+                </div>
+                <div class="login-field">
+                    <label class="login-field-label">▸ CORREO</label>
+                    <input type="email" class="login-input" id="reg-email" placeholder="tu@correo.com"
+                        autocomplete="email">
+                </div>
+                <div class="login-field">
+                    <label class="login-field-label">▸ CONTRASEÑA</label>
+                    <input type="password" class="login-input" id="reg-pass" placeholder="mínimo 6 caracteres"
+                        autocomplete="new-password">
+                </div>
+                <button class="btn-login" onclick="handleRegister()">
+                    <span>[ CREAR CUENTA ]</span>
+                </button>
+                <div class="login-register">
+                    ¿Ya tienes cuenta? <a href="#" onclick="switchTab('login');return false;">ENTRAR</a>
+                </div>
+            </div>
+
+        </div><!-- /login-box -->
+    </div><!-- /login-screen -->
+
+    <header>
+        <div class="header-inner">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"
+                    style="image-rendering:pixelated; filter:drop-shadow(0 0 6px rgba(232,160,180,0.5));">
+                    <rect x="3" y="1" width="10" height="1" fill="#f5e8d8" />
+                    <rect x="2" y="2" width="12" height="3" fill="#e8a0b4" />
+                    <rect x="1" y="2" width="2" height="7" fill="#e8a0b4" />
+                    <rect x="13" y="2" width="2" height="7" fill="#e8a0b4" />
+                    <rect x="3" y="4" width="10" height="5" fill="#d4a882" />
+                    <rect x="5" y="6" width="2" height="2" fill="#1a1010" />
+                    <rect x="9" y="6" width="2" height="2" fill="#1a1010" />
+                    <rect x="2" y="9" width="12" height="6" fill="#0d0b10" />
+                    <rect x="4" y="9" width="8" height="1" fill="#f5e8d8" />
+                    <rect x="9" y="10" width="2" height="5" fill="#d4c0a8" />
+                    <rect x="8" y="8" width="4" height="3" fill="#b89870" />
+                </svg>
+                <div>
+                    <div class="logo-text">DORISK</div>
+                    <div class="logo-sub">la canción del día</div>
+                </div>
+            </div>
+            <div class="avatar-wrap" style="position: relative;">
+                <div class="user-trigger" id="user-menu-trigger">
+                    <span style="font-family:var(--font-pixel); font-size:9px; color:var(--px-rose-dim);"
+                        id="username-display">@Carlos</span>
+                    <div class="avatar-box" id="header-avatar" title="Menú de usuario">🐱</div>
+                </div>
+                <!-- Menú desplegable -->
+                <div class="dropdown-menu panel" id="user-dropdown">
+                    <button class="dropdown-item" id="btn-menu-cuenta">MI CUENTA</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" id="btn-menu-logout" style="color: var(--px-red);">SALIR</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <!-- ── SIDEBAR IZQUIERDO ── -->
+        <aside class="sidebar" id="app-sidebar" style="display: none;">
+            <!-- Ranking / Leaderboard -->
+            <section class="panel ranking-panel">
+                <h2 class="ranking-title">Ranking</h2>
+                <div class="ranking-list" id="ranking-list-container">
+                    <p
+                        style="font-family:var(--font-pixel); font-size:7px; color:var(--px-cream-dim); text-align:center; padding:10px;">
+                        Selecciona una playlist para ver el ranking</p>
+                </div>
+            </section>
+
+            <!-- Histórico Ganadores mini -->
+            <section class="panel ranking-panel" id="sidebar-history-section">
+                <h2 class="ranking-title" style="color: var(--px-rose);">Ganadores</h2>
+                <div class="history-mini-list" id="history-mini-list-container">
+                    <!-- Ganadores renderizados por JS -->
+                </div>
+            </section>
+        </aside>
+
+        <main>
+
+            <div id="dev-bar" class="dev-bar" style="display: none;">
+                <span class="dev-label">◆ DEV MODE</span>
+                <div>
+                    <button class="btn-dev" id="btn-dev-settings" style="margin-right: 8px;">[ CONFIGURACIÓN ]</button>
+                    <button class="btn-dev" id="btn-toggle-estado">[ CAMBIAR ESTADO ]</button>
+                </div>
+            </div>
+
+            <!-- ── CONTADOR GLOBAL DE TIEMPO RESTANTE ── -->
+            <section id="section-countdown" class="panel"
+                style="margin-bottom: 24px; padding: 18px 24px; text-align: center;">
+                <p
+                    style="font-family:var(--font-pixel);font-size:7px;color:var(--px-purple);letter-spacing:3px;margin-bottom:12px;">
+                    ■ SIGUIENTE SLOT DE HOY ABRE EN / TIEMPO RESTANTE</p>
+                <div class="countdown">
+                    <div class="count-box">
+                        <span id="cd-hours" class="count-num">18</span>
+                        <span class="count-lbl">HRS</span>
+                    </div>
+                    <span class="count-sep">:</span>
+                    <div class="count-box">
+                        <span id="cd-mins" class="count-num">42</span>
+                        <span class="count-lbl">MIN</span>
+                    </div>
+                    <span class="count-sep">:</span>
+                    <div class="count-box">
+                        <span id="cd-secs" class="count-num">05</span>
+                        <span class="count-lbl">SEG</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── DISPONIBLE ── -->
+            <section id="estado-disponible" class="panel hero-card">
+                <div class="hero-layout">
+                    <div class="hero-text">
+                        <p
+                            style="font-family:var(--font-pixel);font-size:10px;color:var(--px-rose-dim);letter-spacing:3px;margin-bottom:14px;">
+                            ▶ ES TU TURNO</p>
+                        <h1 class="hero-title">SUELTA LA<br>CANCIÓN!</h1>
+                        <p class="hero-sub">
+                            Pega tu enlace de <span>YouTube</span> o <span>YouTube Music</span>.<br>
+                            Solo una canción al día por persona ✦
+                        </p>
+                        <div style="display:flex;flex-direction:column;gap:10px;">
+                            <div class="input-row">
+                                <select id="song-playlist-select" class="input-px"
+                                    style="background: var(--px-dark); color: var(--px-cream); font-size: 14px; padding: 12px 18px;">
+                                    <option value="">Selecciona tu Playlist...</option>
+                                </select>
+                            </div>
+                            <div class="input-row">
+                                <input id="song-url-input" type="url"
+                                    placeholder="https://www.youtube.com/watch?... o youtu.be/..." class="input-px" />
+                                <span id="url-platform-icon" class="input-px-icon">🔗</span>
+                            </div>
+                            <button id="btn-submit" class="btn-main">
+                                <span class="btn-main-txt">SOLTAR LA CANCIÓN 🎤</span>
+                            </button>
+                        </div>
+                        <div class="platform-row">
+                            <span class="badge-label">SE AÑADE EN</span>
+                            <span class="badge badge-yt">▶ YT MUSIC</span>
+                        </div>
+                    </div>
+                    <!-- Pixel art character -->
+                    <div class="hero-char-slot">
+                        <img id="hero-mascot" src="char.png" class="hero-char" alt="Dorisk mascot" draggable="false">
+                        <div id="hero-bubble" class="hero-bubble">¡SUELTA TU CANCIÓN HOY!</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── MIS PLAYLISTS (acordeón) ── -->
+            <section id="section-playlists">
+                <div class="section-header">
+                    <span class="section-title">MIS PLAYLISTS</span>
+                    <div class="section-line"></div>
+                    <span class="section-count" id="pl-count"></span>
+                </div>
+                <div class="playlist-list" id="playlist-list">
+                    <!-- Generado por JS -->
+                </div>
+            </section>
+
+            <!-- ── HISTÓRICO GANADORES SEMANALES (Oculto, migrado a sidebar) ── -->
+            <section id="section-history" style="display:none;">
+                <div class="section-header">
+                    <span class="section-title">GANADORES DE LA SEMANA</span>
+                    <div class="section-line"></div>
+                    <span class="section-count" id="history-count">0 semanas</span>
+                </div>
+                <div class="history-list" id="history-list">
+                    <!-- Generado por JS -->
+                </div>
+            </section>
+
+        </main>
+    </div><!-- /app-layout -->
+
+    <!-- ── DEV SETTINGS MODAL ── -->
+    <div id="dev-modal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center;">
+        <div class="panel" style="width: 90%; max-width: 500px; padding: 30px; max-height: 80vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h2 style="font-family:var(--font-pixel); font-size:14px; color:var(--px-rose);">ADMIN PLAYLISTS</h2>
+                <button id="btn-close-dev-modal"
+                    style="background:none; border:none; color:var(--px-cream); cursor:pointer; font-family:var(--font-pixel); font-size:14px;">X</button>
+            </div>
+
+            <div
+                style="background: rgba(124,95,160,0.1); border: 1px solid var(--px-purple); padding: 15px; margin-bottom: 20px;">
+                <h3 style="font-family:var(--font-pixel); font-size:10px; color:var(--px-cream); margin-bottom: 10px;">
+                    CREAR NUEVA PLAYLIST</h3>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <label
+                        style="font-family:var(--font-pixel); font-size:9px; color:var(--px-purple); margin-bottom: 5px; display:block;">YOUTUBE
+                        PLAYLIST ID (Ej: PLWKiSrhIgZYI)</label>
+                    <input id="new-pl-yt-id" type="text" class="input-px" style="width:100%;">
+                </div>
+                <button id="btn-create-pl" class="btn-main" style="width:100%; padding: 10px; font-size: 10px;">
+                    <span class="btn-main-txt">CREAR PLAYLIST</span>
+                </button>
+                <div id="create-pl-msg"
+                    style="font-family:var(--font-pixel); font-size:9px; color:var(--px-green); margin-top: 10px; display:none;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h3 style="font-family:var(--font-pixel); font-size:10px; color:var(--px-cream); margin-bottom: 10px;">
+                    GESTIONAR PERMISOS</h3>
+                <div class="input-group" style="margin-bottom: 15px;">
+                    <label
+                        style="font-family:var(--font-pixel); font-size:9px; color:var(--px-purple); margin-bottom: 5px; display:block;">SELECCIONA
+                        PLAYLIST</label>
+                    <div style="display:flex; gap:10px;">
+                        <select id="admin-pl-select" class="input-px"
+                            style="flex:1; background: var(--px-dark); color: var(--px-cream);">
+                            <option value="">Selecciona...</option>
+                        </select>
+                        <button id="btn-delete-pl" class="btn-main"
+                            style="width:auto; padding:10px 15px; font-size: 10px; background: var(--px-rose-dim); display:none;">
+                            <span class="btn-main-txt">ELIMINAR</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="admin-users-list"
+                    style="display:flex; flex-direction:column; gap:8px; max-height:150px; overflow-y:auto; margin-bottom: 15px; border: 1px solid var(--px-border); padding: 10px; background: var(--px-dark);">
+                    <!-- Usuarios renderizados por JS -->
+                </div>
+                <button id="btn-save-users" class="btn-main" style="width:100%; padding: 10px; font-size: 10px;"
+                    disabled>
+                    <span class="btn-main-txt">GUARDAR PERMISOS</span>
+                </button>
+                <div id="save-users-msg"
+                    style="font-family:var(--font-pixel); font-size:9px; color:var(--px-green); margin-top: 10px; display:none;">
+                </div>
+            </div>
+
+            <div
+                style="margin-top: 25px; border-top: 1px solid var(--px-border); padding-top: 20px; margin-bottom: 15px;">
+                <h3 style="font-family:var(--font-pixel); font-size:10px; color:var(--px-cream); margin-bottom: 10px;">
+                    APROBACIÓN DE USUARIOS</h3>
+                <div id="admin-pending-users-list"
+                    style="display:flex; flex-direction:column; gap:8px; max-height:150px; overflow-y:auto; margin-bottom: 15px; border: 1px solid var(--px-border); padding: 10px; background: var(--px-dark);">
+                    <!-- Usuarios pendientes renderizados por JS -->
+                </div>
+                <div id="approve-users-msg"
+                    style="font-family:var(--font-pixel); font-size:9px; color:var(--px-green); margin-top: 10px; display:none;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── USER PROFILE MODAL ── -->
+    <div id="profile-modal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center;">
+        <div class="panel" style="width: 90%; max-width: 400px; padding: 30px; max-height: 85vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h2 style="font-family:var(--font-pixel); font-size:12px; color:var(--px-rose);">CONFIGURACIÓN DE CUENTA
+                </h2>
+                <button id="btn-close-profile-modal"
+                    style="background:none; border:none; color:var(--px-cream); cursor:pointer; font-family:var(--font-pixel); font-size:14px;">X</button>
+            </div>
+
+            <!-- Avatar settings -->
+            <div
+                style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 25px; border-bottom: 1px solid var(--px-border); padding-bottom: 20px;">
+                <div class="avatar-box" id="profile-modal-avatar-preview"
+                    style="width: 80px; height: 80px; font-size: 40px; border-width: 3px; cursor: default;">🐱</div>
+                <div style="text-align: center;">
+                    <button id="btn-select-avatar" class="btn-dev" style="font-size: 8px;">[ SELECCIONAR FOTO ]</button>
+                    <input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
+                    <p
+                        style="font-size: 8px; color: var(--px-cream-dim); margin-top: 6px; font-family: var(--font-pixel);">
+                        Formatos: PNG/JPG (Máx. 1MB)</p>
+                </div>
+            </div>
+
+            <!-- Profile Info Form -->
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="input-group">
+                    <label
+                        style="font-family:var(--font-pixel); font-size:8px; color:var(--px-purple); margin-bottom: 5px; display:block;">NOMBRE
+                        DE USUARIO</label>
+                    <input id="profile-username-input" type="text" class="input-px" style="width:100%;">
+                </div>
+
+                <div class="input-group">
+                    <label
+                        style="font-family:var(--font-pixel); font-size:8px; color:var(--px-purple); margin-bottom: 5px; display:block;">NUEVA
+                        CONTRASEÑA (VACÍO PARA NO CAMBIAR)</label>
+                    <input id="profile-password-input" type="password" class="input-px" style="width:100%;"
+                        placeholder="••••••••">
+                </div>
+
+                <button id="btn-save-profile" class="btn-main"
+                    style="width:100%; padding: 12px; font-size: 10px; margin-top: 10px;">
+                    <span class="btn-main-txt">GUARDAR CAMBIOS</span>
+                </button>
+
+                <div id="profile-msg"
+                    style="font-family:var(--font-pixel); font-size:8px; text-align:center; margin-top: 10px; display:none;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p class="footer-txt">DORISK · !Que alguien me contrate por favor!</p>
+    </footer>
+
+
+    <script>
+        // ── Toggle estado (Modo Dev - Simular Cooldown) ──
+        const btnToggle = document.getElementById('btn-toggle-estado');
+        const vistaDisponible = document.getElementById('estado-disponible');
+        btnToggle.addEventListener('click', () => {
+            const songInput = document.getElementById("song-url-input");
+            const btnSubmit = document.getElementById("btn-submit");
+            const bubble = document.getElementById("hero-bubble");
+
+            if (!songInput || !btnSubmit) return;
+
+            const isCurrentlyDisabled = songInput.disabled;
+            songInput.disabled = !isCurrentlyDisabled;
+            btnSubmit.disabled = !isCurrentlyDisabled;
+
+            if (isCurrentlyDisabled) {
+                songInput.placeholder = "https://www.youtube.com/watch?... o youtu.be/...";
+                if (bubble) {
+                    bubble.classList.remove("show");
+                    bubble.textContent = "¡SUELTA TU CANCIÓN HOY!";
+                }
+            } else {
+                songInput.placeholder = "Ya subiste una canción hoy a esta playlist...";
+                if (bubble) {
+                    bubble.classList.add("show");
+                    bubble.textContent = "*zzz*... ya cumpliste hoy~";
+                }
+            }
+        });
+
+        // ── Icono plataforma en input ──
+        const urlInput = document.getElementById('song-url-input');
+        const platformIcon = document.getElementById('url-platform-icon');
+        urlInput.addEventListener('input', () => {
+            const val = urlInput.value.toLowerCase();
+            if (val.includes('spotify')) {
+                platformIcon.textContent = '🟢';
+                platformIcon.style.transform = 'translateY(-50%) scale(1.2)';
+            } else if (val.includes('youtube') || val.includes('youtu.be')) {
+                platformIcon.textContent = '🔴';
+                platformIcon.style.transform = 'translateY(-50%) scale(1.2)';
+            } else {
+                platformIcon.textContent = '🔗';
+                platformIcon.style.transform = 'translateY(-50%) scale(1)';
+            }
+        });
+
+        // ── Pixel particles ──
+        const COLORS = ['#e8a0b4', '#c47a96', '#7c5fa0', '#f5e8d8', '#d4c0a8'];
+        function spawnPixel() {
+            const el = document.createElement('div');
+            el.className = 'pixel-particle';
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.bottom = '0';
+            el.style.background = COLORS[Math.floor(Math.random() * COLORS.length)];
+            const sz = (Math.random() > 0.5 ? 4 : 2) + 'px';
+            el.style.width = sz; el.style.height = sz;
+            el.style.animationDuration = (3 + Math.random() * 5) + 's';
+            el.style.animationDelay = (Math.random() * 2) + 's';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 8000);
+        }
+        setInterval(spawnPixel, 600);
+        for (let i = 0; i < 8; i++) setTimeout(spawnPixel, i * 150);
+
+        // ── Mascota Principal (Doris) ──
+        const mascot = document.getElementById('hero-mascot');
+        const bubble = document.getElementById('hero-bubble');
+        const BUBBLES = [
+            'Que vida mas gitana',
+            'Mola',
+            'Mi hermano me explotaba 80h semanales<br>y ahora capoeira estoy hasta la polla.',
+            'Wow simplemente que mujer.',
+            'Si te preguntas cuantos dedos<br>por el culo me caben, 4. Son 4.',
+            '*sonido inteligible...*',
+            'FERRAAAAAAAAAAAAAAAAAAAAAAAAAAAN'
+        ];
+        let bubbleTimer;
+
+        mascot?.addEventListener('click', () => {
+            if (!bubble) return;
+            bubble.innerHTML = BUBBLES[Math.floor(Math.random() * BUBBLES.length)];
+            bubble.classList.add('show');
+            clearTimeout(bubbleTimer);
+            bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 3200);
+
+            // Animación de bote
+            mascot.style.animation = 'none';
+            mascot.style.transform = 'scale(1.08) translateY(-8px)';
+            setTimeout(() => {
+                mascot.style.transform = '';
+                mascot.style.animation = '';
+            }, 320);
+        });
+
+        // Partículas en login screen
+        const COLORS_P = ['#e8a0b4', '#c47a96', '#7c5fa0', '#f5e8d8'];
+        function spawnLoginPixel() {
+            const lp = document.getElementById('login-particles');
+            if (!lp) return;
+            const el = document.createElement('div');
+            el.className = 'pixel-particle';
+            el.style.left = Math.random() * 100 + '%';
+            el.style.bottom = '0';
+            el.style.background = COLORS_P[Math.floor(Math.random() * COLORS_P.length)];
+            const sz = (Math.random() > 0.5 ? 4 : 2) + 'px';
+            el.style.width = sz; el.style.height = sz;
+            el.style.animationDuration = (3 + Math.random() * 5) + 's';
+            el.style.animationDelay = (Math.random() * 1) + 's';
+            lp.appendChild(el);
+            setTimeout(() => el.remove(), 8000);
+        }
+        setInterval(spawnLoginPixel, 500);
+        for (let i = 0; i < 10; i++) setTimeout(spawnLoginPixel, i * 120);
+
+
+        // ════════════════════════════════════════
+        // ── INTEGRACIÓN CON BACKEND (APIs)
+        // ════════════════════════════════════════
+
+        // Cambia la URL de Render cuando lo despliegues
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:8000' 
+            : 'https://tu-backend-render.onrender.com';
+        let PLAYLISTS = [];
+        let openPlaylistId = null;
+
+        // Wrapper de fetch con autenticación
+        async function apiFetch(endpoint, options = {}) {
+            const token = localStorage.getItem("dorisk_token");
+            const headers = {
+                "Content-Type": "application/json",
+                ...options.headers
+            };
+            if (token) {
+                headers["Authorization"] = `Bearer ${token}`;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    ...options,
+                    headers
+                });
+
+                if (response.status === 401) {
+                    handleLogout();
+                    throw new Error("Sesión expirada");
+                }
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || "Error en el servidor");
+                }
+
+                return response.json();
+            } catch (err) {
+                console.error(`Error en API Fetch ${endpoint}:`, err);
+                throw err;
+            }
+        }
+
+        // ── RENDER ACCORDION DE PLAYLISTS ──
+        function badgeHTML(pl) {
+            const platforms = pl.platforms || [];
+            return platforms.map(p => {
+                if (p === 'sp') {
+                    return '<span class="badge badge-sp">● SP</span>';
+                } else {
+                    if (pl.youtube_id) {
+                        return `<a href="https://www.youtube.com/playlist?list=${pl.youtube_id}" target="_blank" class="badge badge-yt" onclick="event.stopPropagation();" style="text-decoration:none;">▶ YT</a>`;
+                    }
+                    return '<span class="badge badge-yt">▶ YT</span>';
+                }
+            }).join('');
+        }
+
+        function starSVG(filled, size = 'normal') {
+            const cls = size === 'large' ? 'px-star large' : (size === 'small' ? 'px-star small' : 'px-star');
+            const fill = filled ? '#e8a0b4' : '#2e2640';
+            const shade = filled ? '#c47a96' : '#1e1828';
+            return `<svg class="${cls}" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="0" width="2" height="1" fill="${fill}"/>
+                <rect x="3" y="1" width="4" height="1" fill="${fill}"/>
+                <rect x="0" y="2" width="10" height="2" fill="${fill}"/>
+                <rect x="1" y="4" width="8" height="1" fill="${fill}"/>
+                <rect x="2" y="5" width="6" height="1" fill="${fill}"/>
+                <rect x="1" y="6" width="4" height="1" fill="${fill}"/>
+                <rect x="5" y="6" width="4" height="1" fill="${fill}"/>
+                <rect x="0" y="7" width="3" height="2" fill="${fill}"/>
+                <rect x="7" y="7" width="3" height="2" fill="${fill}"/>
+                <rect x="1" y="4" width="1" height="1" fill="${shade}"/>
+                <rect x="8" y="4" width="1" height="1" fill="${shade}"/>
+            </svg>`;
+        }
+
+        function getAvg(votes) {
+            if (!votes || !votes.length) return 0;
+            return (votes.reduce((a, b) => a + b, 0) / votes.length).toFixed(1);
+        }
+
+        function songsHTML(pl) {
+            const currentUser = localStorage.getItem("dorisk_user") || "";
+            return pl.songs.map((s, i) => {
+                const isOwn = s.by === `@${currentUser}`;
+                const hasVoted = s.userVote !== null;
+                const avg = s.average_score || 0.0;
+                const total = s.votes_count || 0;
+
+                let rightHTML = '';
+                if (isOwn) {
+                    rightHTML = `
+                        <div class="sub-song-right">
+                            <span class="sub-own-badge">TU CANCION</span>
+                            <div class="sub-avg-block" title="Puntuación Media">
+                                <span class="sub-avg-num">${avg}</span>
+                                <span style="font-size: 5px; color: var(--px-rose);">★</span>
+                            </div>
+                        </div>`;
+                } else {
+                    const starsInput = Array.from({ length: 7 }, (_, idx) => `
+                        <button class="sub-star-btn" data-song-id="${s.id}" data-val="${idx + 1}" title="Votar ${idx + 1} estrella${idx !== 0 ? 's' : ''}">
+                            ${starSVG(hasVoted ? (idx < s.userVote) : false, 'small')}
+                        </button>
+                    `).join('');
+                    rightHTML = `
+                        <div class="sub-song-right">
+                            <div class="sub-star-rating" id="sub-stars-${s.id}" data-user-vote="${s.userVote || 0}">
+                                ${starsInput}
+                            </div>
+                        </div>`;
+                }
+
+                // Imagen de fondo con fallback
+                const artStyle = s.art.startsWith("http") ? `background-image:url('${s.art}'); background-size:cover;` : `background:linear-gradient(135deg, ${s.bg || '#3a2255,#7c5fa0'});`;
+                const artContent = s.art.startsWith("http") ? "" : s.art;
+
+                return `
+                    <div class="sub-song">
+                        <a class="sub-song-left" href="${s.song_url || '#'}" target="_blank" style="text-decoration:none;">
+                            <span class="sub-num">${String(i + 1).padStart(2, '0')}</span>
+                            <div class="sub-art" style="${artStyle}">${artContent}</div>
+                            <div class="sub-info">
+                                <p class="sub-track">${s.track}</p>
+                                <p class="sub-artist">${s.artist}</p>
+                                <div class="sub-meta">
+                                    <span class="sub-by">por <span>${s.by}</span></span>
+                                </div>
+                            </div>
+                        </a>
+                        ${rightHTML}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAccordion() {
+            const list = document.getElementById('playlist-list');
+            document.getElementById('pl-count').textContent = PLAYLISTS.length + ' listas';
+
+            list.innerHTML = PLAYLISTS.map(pl => {
+                const isOpen = pl.id === openPlaylistId;
+                return `
+                    <div class="pl-item${isOpen ? ' open' : ''}" data-id="${pl.id}">
+                        <div class="pl-row">
+                            <div class="pl-icon" style="background:${pl.gradient};">${pl.emoji}</div>
+                            <div class="pl-info">
+                                <p class="pl-name">${pl.name}</p>
+                                <p class="pl-sub">${pl.tracks} temas &nbsp;·&nbsp; ${badgeHTML(pl)}</p>
+                            </div>
+                            <div class="pl-right">
+                                <span class="pl-chevron">▼</span>
+                            </div>
+                        </div>
+                        <div class="pl-expand">
+                            <div class="pl-expand-inner">
+                                <p class="pl-expand-label">▸ ÚLTIMAS AÑADIDAS (VOTA DEL 1 AL 7 ✦)</p>
+                                <div class="pl-songs-scroll">
+                                    ${pl.songs.length > 0 ? songsHTML(pl) : '<p style="font-family:var(--font-pixel);font-size:6px;color:var(--px-purple);padding:10px;text-align:center;">No hay canciones aún.</p>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Accordion toggle
+            list.querySelectorAll('.pl-item').forEach(item => {
+                const plId = item.dataset.id;
+                item.querySelector('.pl-row').addEventListener('click', () => {
+                    const isOpen = item.classList.contains('open');
+                    list.querySelectorAll('.pl-item.open').forEach(o => o.classList.remove('open'));
+                    if (!isOpen) {
+                        item.classList.add('open');
+                        openPlaylistId = plId;
+                    } else {
+                        openPlaylistId = null;
+                    }
+                });
+            });
+
+            attachSubVoteListeners();
+        }
+
+        function attachSubVoteListeners() {
+            document.querySelectorAll('.sub-star-btn').forEach(btn => {
+                const songId = btn.dataset.songId;
+                const val = parseInt(btn.dataset.val);
+                const row = document.getElementById('sub-stars-' + songId);
+                if (!row) return;
+
+                btn.addEventListener('mouseenter', () => {
+                    row.querySelectorAll('.sub-star-btn').forEach((b, i) => {
+                        b.innerHTML = starSVG(i < val, 'small');
+                    });
+                });
+                btn.addEventListener('mouseleave', () => {
+                    const userVote = parseInt(row.dataset.userVote) || 0;
+                    row.querySelectorAll('.sub-star-btn').forEach((b, i) => {
+                        b.innerHTML = starSVG(userVote > 0 ? (i < userVote) : false, 'small');
+                    });
+                });
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    castSubVote(songId, val);
+                });
+            });
+        }
+
+        async function castSubVote(songId, value) {
+            try {
+                // Registrar en el backend
+                await apiFetch(`/api/songs/${songId}/vote`, {
+                    method: "POST",
+                    body: JSON.stringify({ score: value })
+                });
+
+                const row = document.getElementById('sub-stars-' + songId);
+                if (row) {
+                    row.innerHTML = `<span style="font-family:var(--font-pixel);font-size:6px;color:var(--px-green);">✓ REGISTRADO</span>`;
+                }
+
+                setTimeout(loadFeed, 600);
+            } catch (err) {
+                alert("Error al votar: " + err.message);
+                loadFeed();
+            }
+        }
+
+        // ── CONTROL DE ESTADO DE SUBISIÓN DIARIA ──
+        async function loadFeed() {
+            try {
+                const playlistsData = await apiFetch("/api/songs/feed");
+
+                // El backend ahora devuelve directamente la lista de playlists
+                PLAYLISTS = playlistsData;
+
+                renderAccordion();
+
+                // Poblar dropdown
+                const select = document.getElementById("song-playlist-select");
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">Selecciona tu Playlist...</option>';
+
+                let availableCount = 0;
+                PLAYLISTS.forEach(pl => {
+                    const opt = document.createElement("option");
+                    opt.value = pl.id;
+                    opt.textContent = pl.name;
+                    select.appendChild(opt);
+                    availableCount++;
+                });
+
+                if (currentVal) select.value = currentVal;
+
+                if (availableCount > 0) {
+                    vistaDisponible.style.display = "block";
+                    document.getElementById("section-countdown").style.display = "block";
+
+                    // Cargar leaderboard de la playlist activa
+                    let activePid = select.value;
+                    if (!activePid) {
+                        activePid = PLAYLISTS[0].id;
+                        select.value = activePid;
+                    }
+                    if (activePid) {
+                        loadLeaderboard(activePid);
+                        updatePlaylistCooldown(activePid);
+                    }
+                } else {
+                    vistaDisponible.style.display = "block";
+                    document.getElementById("section-countdown").style.display = "none";
+
+                    const songInput = document.getElementById("song-url-input");
+                    const btnSubmit = document.getElementById("btn-submit");
+                    const bubble = document.getElementById("hero-bubble");
+                    const selectEl = document.getElementById("song-playlist-select");
+
+                    if (selectEl) selectEl.innerHTML = '<option value="">Sin playlist asignada</option>';
+                    if (songInput) {
+                        songInput.disabled = true;
+                        songInput.placeholder = "Pídele a un administrador que te añada a una playlist...";
+                    }
+                    if (btnSubmit) btnSubmit.disabled = true;
+                    if (bubble) {
+                        bubble.style.display = "block";
+                        bubble.textContent = "No tienes acceso a ninguna playlist...";
+                    }
+                    loadLeaderboard(null);
+                }
+            } catch (err) {
+                console.error("Fallo al refrescar feed:", err);
+            }
+        }
+
+        // ── CARGAR HISTÓRICO ──
+        async function loadHistory() {
+            try {
+                const history = await apiFetch("/api/history");
+                const list = document.getElementById('history-list');
+                const count = document.getElementById('history-count');
+                count.textContent = history.length + ' semanas';
+
+                list.innerHTML = history.map((h, i) => {
+                    return `
+                        <div class="history-card${h.trophy === '🏆' ? ' gold-border' : ''}">
+                            <div class="history-trophy${h.trophy === '🏆' ? ' gold' : ''}">${h.trophy}</div>
+                            <div class="history-info">
+                                <p class="history-week${i === 0 ? ' latest' : ''}">▸ ${h.week_label}</p>
+                                <p class="history-track">${h.track}</p>
+                                <p class="history-artist">${h.artist}</p>
+                                <div class="history-meta">
+                                    <span class="history-by">por <span>${h.submitted_by}</span></span>
+                                </div>
+                            </div>
+                            <div class="history-score-block">
+                                <span class="history-score-num">${h.score}</span>
+                                <span class="history-score-lbl">MEDIA</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Renderizar también en el sidebar izquierdo
+                const miniListContainer = document.getElementById("history-mini-list-container");
+                if (miniListContainer) {
+                    if (history.length === 0) {
+                        miniListContainer.innerHTML = `<p style="font-family:var(--font-pixel); font-size:7px; color:var(--px-cream-dim); text-align:center; padding:10px;">No hay ganadores aún</p>`;
+                    } else {
+                        miniListContainer.innerHTML = history.map((h, i) => {
+                            const label = h.week_label.split(' · ')[0] || h.week_label;
+                            return `
+                                <div class="history-mini-card">
+                                    <div class="history-mini-trophy">${h.trophy}</div>
+                                    <div class="history-mini-info">
+                                        <p class="history-mini-week">${label}</p>
+                                        <p class="history-mini-track" title="${h.track}">${h.track}</p>
+                                        <p class="history-mini-artist" title="${h.artist}">${h.artist}</p>
+                                        <p class="history-mini-by">por <span>${h.submitted_by}</span></p>
+                                    </div>
+                                    <div class="history-mini-score">${h.score}★</div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch (err) {
+                console.error("Fallo al refrescar histórico:", err);
+            }
+        }
+
+        // ── BOTÓN SUBMIT CANCIÓN ──
+        const btnSubmit = document.getElementById('btn-submit');
+        btnSubmit.addEventListener('click', async () => {
+            const val = urlInput.value.trim();
+            const playlist_id = document.getElementById('song-playlist-select').value;
+
+            if (!playlist_id) {
+                alert("Debes seleccionar una playlist de destino.");
+                return;
+            }
+            if (!val) {
+                urlInput.classList.add('shake');
+                setTimeout(() => urlInput.classList.remove('shake'), 400);
+                return;
+            }
+
+            const txt = btnSubmit.querySelector('.btn-main-txt');
+            const originalText = txt.textContent;
+
+            txt.textContent = 'PROCESANDO... ✦';
+            btnSubmit.disabled = true;
+
+            try {
+                const res = await apiFetch("/api/songs/submit", {
+                    method: "POST",
+                    body: JSON.stringify({ url: val, playlist_id: playlist_id })
+                });
+
+                urlInput.value = "";
+                platformIcon.textContent = '🔗';
+                platformIcon.style.transform = 'translateY(-50%) scale(1)';
+
+                await loadFeed();
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                txt.textContent = originalText;
+                btnSubmit.disabled = false;
+            }
+        });
+
+        // ── LOGOUT ──
+        function handleLogout() {
+            localStorage.removeItem("dorisk_token");
+            localStorage.removeItem("dorisk_user");
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('app-sidebar').style.display = 'none';
+            document.getElementById('user-dropdown').style.display = 'none';
+        }
+
+        // ── LOGIN / REGISTRO FORMULARIOS ──
+        function switchTab(tab) {
+            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+            document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+            document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+            document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+            document.getElementById('login-error').classList.remove('show');
+        }
+
+        async function handleLogin() {
+            const emailOrUser = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            const err = document.getElementById('login-error');
+
+            if (!emailOrUser || !pass) {
+                err.textContent = '▸ RELLENA TODOS LOS CAMPOS';
+                err.classList.add('show'); return;
+            }
+
+            err.classList.remove('show');
+            const btn = document.getElementById('btn-login');
+            btn.querySelector('span').textContent = '[ CARGANDO... ]';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username_or_email: emailOrUser, password: pass })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || "Credenciales incorrectas");
+                }
+
+                const data = await response.json();
+                localStorage.setItem("dorisk_token", data.token);
+                localStorage.setItem("dorisk_user", data.username);
+
+                initApp(data.token, data.username);
+            } catch (e) {
+                err.textContent = `▸ ${e.message.toUpperCase()}`;
+                err.classList.add('show');
+            } finally {
+                btn.querySelector('span').textContent = '[ ENTRAR ]';
+                btn.disabled = false;
+            }
+        }
+
+        async function handleRegister() {
+            const user = document.getElementById('reg-user').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const pass = document.getElementById('reg-pass').value.trim();
+            const err = document.getElementById('login-error');
+
+            if (!user || !email || !pass) {
+                err.textContent = '▸ RELLENA TODOS LOS CAMPOS';
+                err.classList.add('show'); return;
+            }
+
+            err.classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/register`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: user, email: email, password: pass })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || "Error al crear la cuenta");
+                }
+
+                const data = await response.json();
+                if (data.token && data.token !== "token-pending-email-confirm") {
+                    localStorage.setItem("dorisk_token", data.token);
+                    localStorage.setItem("dorisk_user", data.username);
+                    initApp(data.token, data.username);
+                } else {
+                    alert("¡Cuenta creada! Verifica tu correo electrónico si es requerido.");
+                    switchTab('login');
+                }
+            } catch (e) {
+                err.textContent = `▸ ${e.message.toUpperCase()}`;
+                err.classList.add('show');
+            }
+        }
+
+        function handleGoogleLogin() {
+            alert("Redirigiendo a Google OAuth...");
+            window.location.href = `${API_URL}/api/auth/youtube`;
+        }
+
+        // ── COUNTDOWN REAL HASTA MEDIANOCHE UTC ──
+        function updateCountdown() {
+            const now = new Date();
+            const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+            const diff = tomorrow - now;
+
+            const hours = Math.floor(diff / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            const secs = Math.floor((diff % 60000) / 1000);
+
+            document.getElementById("cd-hours").textContent = String(hours).padStart(2, "0");
+            document.getElementById("cd-mins").textContent = String(mins).padStart(2, "0");
+            document.getElementById("cd-secs").textContent = String(secs).padStart(2, "0");
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        // ── CARGAR PERFIL DE USUARIO ──
+        async function fetchUserProfile() {
+            try {
+                const profile = await apiFetch("/api/auth/profile");
+                document.getElementById('username-display').textContent = `@${profile.username}`;
+
+                const headerAvatar = document.getElementById('header-avatar');
+                if (headerAvatar) {
+                    if (profile.avatar_url && profile.avatar_url.startsWith("http")) {
+                        headerAvatar.innerHTML = `<img src="${profile.avatar_url}" style="width:100%; height:100%; object-fit:cover; border-radius:0;"/>`;
+                    } else {
+                        headerAvatar.textContent = "🐱";
+                    }
+                }
+
+                const modalAvatar = document.getElementById('profile-modal-avatar-preview');
+                if (modalAvatar) {
+                    if (profile.avatar_url && profile.avatar_url.startsWith("http")) {
+                        modalAvatar.innerHTML = `<img src="${profile.avatar_url}" style="width:100%; height:100%; object-fit:cover; border-radius:0;"/>`;
+                    } else {
+                        modalAvatar.textContent = "🐱";
+                    }
+                }
+
+                const usernameInput = document.getElementById('profile-username-input');
+                if (usernameInput) {
+                    usernameInput.value = profile.username;
+                }
+            } catch (err) {
+                console.error("Error al cargar perfil de usuario:", err);
+                throw err;
+            }
+        }
+
+        // ── INICIALIZAR APP AL INICIAR SESIÓN ──
+        async function initApp(token, username) {
+            try {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-sidebar').style.display = 'flex';
+
+                await fetchUserProfile();
+
+                loadFeed();
+                loadHistory();
+                loadDevMode();
+            } catch (err) {
+                console.error("Error al inicializar la app:", err);
+
+                // Limpiar tokens y sesión
+                localStorage.removeItem("dorisk_token");
+                localStorage.removeItem("dorisk_user");
+
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-sidebar').style.display = 'none';
+
+                const loginErr = document.getElementById("login-error");
+                if (loginErr) {
+                    loginErr.textContent = `▸ ${err.message.toUpperCase()}`;
+                    loginErr.style.display = "block";
+                    loginErr.style.color = "var(--px-rose)";
+                }
+            }
+        }
+
+        // ── INICIALIZACIÓN AL CARGAR LA PÁGINA ──
+        window.addEventListener("load", () => {
+            const token = localStorage.getItem("dorisk_token");
+            if (token) {
+                initApp(token, localStorage.getItem("dorisk_user"));
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-sidebar').style.display = 'none';
+            }
+        });
+
+        // ── ENTER KEY TRIGGERS FOR LOGIN/REGISTRATION ──
+        ['login-user', 'login-pass'].forEach(id => {
+            document.getElementById(id)?.addEventListener('keydown', e => {
+                if (e.key === 'Enter') handleLogin();
+            });
+        });
+        ['reg-user', 'reg-email', 'reg-pass'].forEach(id => {
+            document.getElementById(id)?.addEventListener('keydown', e => {
+                if (e.key === 'Enter') handleRegister();
+            });
+        });
+
+        // ── DEV MODE SETTINGS LOGIC ──
+        let adminUsers = [];
+        let adminPlaylists = [];
+
+        async function loadDevMode() {
+            try {
+                const config = await apiFetch("/api/admin/config");
+                if (config.dev_mode) {
+                    document.getElementById("dev-bar").style.display = "flex";
+                    loadAdminData();
+                }
+            } catch (err) {
+                console.log("No se pudo cargar la config dev", err);
+            }
+        }
+
+        async function loadAdminData() {
+            try {
+                adminUsers = await apiFetch("/api/admin/users");
+                adminPlaylists = await apiFetch("/api/admin/playlists");
+
+                const select = document.getElementById("admin-pl-select");
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">Selecciona...</option>';
+                adminPlaylists.forEach(pl => {
+                    const opt = document.createElement("option");
+                    opt.value = pl.id;
+                    opt.textContent = pl.name;
+                    select.appendChild(opt);
+                });
+                if (currentVal) select.value = currentVal;
+
+                renderPendingUsers();
+            } catch (e) {
+                console.error("Error cargando admin data:", e);
+            }
+        }
+
+        function renderPendingUsers() {
+            const container = document.getElementById("admin-pending-users-list");
+            if (!container) return;
+
+            container.innerHTML = "";
+            const pending = adminUsers.filter(u => !u.is_approved);
+            if (pending.length === 0) {
+                container.innerHTML = "<span style='color:var(--px-cream-dim);font-size:9px;'>No hay usuarios pendientes</span>";
+                return;
+            }
+
+            pending.forEach(u => {
+                const div = document.createElement("div");
+                div.style.display = "flex";
+                div.style.alignItems = "center";
+                div.style.justifyContent = "space-between";
+                div.style.gap = "10px";
+                div.style.marginBottom = "5px";
+
+                const label = document.createElement("label");
+                label.textContent = `@${u.username} (${u.email})`;
+                label.style.fontFamily = "var(--font-pixel)";
+                label.style.fontSize = "9px";
+                label.style.color = "var(--px-cream)";
+                label.style.flex = "1";
+                label.style.whiteSpace = "nowrap";
+                label.style.overflow = "hidden";
+                label.style.textOverflow = "ellipsis";
+
+                const actionDiv = document.createElement("div");
+                actionDiv.style.display = "flex";
+                actionDiv.style.gap = "5px";
+
+                const btnApprove = document.createElement("button");
+                btnApprove.className = "btn-main";
+                btnApprove.style.padding = "4px 8px";
+                btnApprove.style.fontSize = "8px";
+                btnApprove.style.background = "var(--px-green)";
+                btnApprove.innerHTML = '<span class="btn-main-txt">APROBAR</span>';
+                btnApprove.onclick = async () => {
+                    btnApprove.disabled = true;
+                    try {
+                        await apiFetch(`/api/admin/users/${u.id}/approve`, {
+                            method: "POST",
+                            body: JSON.stringify({ approve: true })
+                        });
+                        showApproveMsg(`@${u.username} aprobado.`, "var(--px-green)");
+                        await loadAdminData();
+                    } catch (err) {
+                        showApproveMsg(err.message, "var(--px-red)");
+                    }
+                };
+
+                const btnReject = document.createElement("button");
+                btnReject.className = "btn-main";
+                btnReject.style.padding = "4px 8px";
+                btnReject.style.fontSize = "8px";
+                btnReject.style.background = "var(--px-rose-dim)";
+                btnReject.innerHTML = '<span class="btn-main-txt">RECHAZAR</span>';
+                btnReject.onclick = async () => {
+                    if (!confirm(`¿Rechazar y borrar cuenta de @${u.username}?`)) return;
+                    btnReject.disabled = true;
+                    try {
+                        await apiFetch(`/api/admin/users/${u.id}/approve`, {
+                            method: "POST",
+                            body: JSON.stringify({ approve: false })
+                        });
+                        showApproveMsg(`@${u.username} rechazado.`, "var(--px-green)");
+                        await loadAdminData();
+                    } catch (err) {
+                        showApproveMsg(err.message, "var(--px-red)");
+                    }
+                };
+
+                actionDiv.appendChild(btnApprove);
+                actionDiv.appendChild(btnReject);
+                div.appendChild(label);
+                div.appendChild(actionDiv);
+                container.appendChild(div);
+            });
+        }
+
+        function showApproveMsg(text, color) {
+            const msg = document.getElementById("approve-users-msg");
+            if (msg) {
+                msg.textContent = text;
+                msg.style.display = "block";
+                msg.style.color = color;
+                setTimeout(() => msg.style.display = "none", 4000);
+            }
+        }
+
+        document.getElementById("btn-dev-settings")?.addEventListener("click", () => {
+            document.getElementById("dev-modal").style.display = "flex";
+            document.getElementById("create-pl-msg").style.display = "none";
+            document.getElementById("save-users-msg").style.display = "none";
+            loadAdminData();
+        });
+
+        document.getElementById("btn-close-dev-modal")?.addEventListener("click", () => {
+            document.getElementById("dev-modal").style.display = "none";
+            // Refresh feed in case permissions changed
+            loadFeed();
+        });
+
+        document.getElementById("btn-create-pl")?.addEventListener("click", async () => {
+            const btn = document.getElementById("btn-create-pl");
+            const msg = document.getElementById("create-pl-msg");
+            const ytId = document.getElementById("new-pl-yt-id").value.trim();
+
+            if (!ytId) {
+                msg.textContent = "Introduce un ID válido.";
+                msg.style.display = "block"; msg.style.color = "var(--px-red)";
+                return;
+            }
+
+            btn.querySelector("span").textContent = "[ CREANDO... ]";
+            btn.disabled = true;
+
+            try {
+                await apiFetch("/api/admin/playlists", {
+                    method: "POST",
+                    body: JSON.stringify({ youtube_id: ytId })
+                });
+                msg.textContent = "Playlist creada con éxito.";
+                msg.style.display = "block"; msg.style.color = "var(--px-green)";
+                document.getElementById("new-pl-yt-id").value = "";
+                await loadAdminData();
+            } catch (e) {
+                msg.textContent = "Error: " + e.message;
+                msg.style.display = "block"; msg.style.color = "var(--px-red)";
+            } finally {
+                btn.querySelector("span").textContent = "CREAR PLAYLIST";
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById("admin-pl-select")?.addEventListener("change", async (e) => {
+            const pid = e.target.value;
+            const container = document.getElementById("admin-users-list");
+            const btnSave = document.getElementById("btn-save-users");
+            const btnDelete = document.getElementById("btn-delete-pl");
+            container.innerHTML = "";
+            document.getElementById("save-users-msg").style.display = "none";
+
+            if (!pid) {
+                btnSave.disabled = true;
+                if (btnDelete) btnDelete.style.display = "none";
+                return;
+            }
+
+            btnSave.disabled = false;
+            if (btnDelete) btnDelete.style.display = "block";
+            container.innerHTML = "<span style='color:var(--px-cream-dim);font-size:9px;'>Cargando permisos...</span>";
+
+            try {
+                const assignedIds = await apiFetch(`/api/admin/playlists/${pid}/users`);
+                container.innerHTML = "";
+                const approvedUsers = adminUsers.filter(u => u.is_approved);
+                approvedUsers.forEach(u => {
+                    const div = document.createElement("div");
+                    div.style.display = "flex";
+                    div.style.alignItems = "center";
+                    div.style.gap = "10px";
+
+                    const cb = document.createElement("input");
+                    cb.type = "checkbox";
+                    cb.value = u.id;
+                    cb.className = "admin-user-cb";
+                    cb.checked = assignedIds.includes(u.id);
+
+                    const label = document.createElement("label");
+                    label.textContent = `@${u.username} (${u.email})`;
+                    label.style.fontFamily = "var(--font-pixel)";
+                    label.style.fontSize = "9px";
+                    label.style.color = "var(--px-cream)";
+
+                    div.appendChild(cb);
+                    div.appendChild(label);
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                container.innerHTML = `<span style="color:var(--px-red);font-size:9px;">Error cargando permisos: ${e.message}</span>`;
+            }
+        });
+
+        document.getElementById("btn-delete-pl")?.addEventListener("click", async () => {
+            const pid = document.getElementById("admin-pl-select").value;
+            if (!pid) return;
+
+            if (!confirm("¿Seguro que quieres eliminar esta playlist? Se borrarán también sus canciones.")) {
+                return;
+            }
+
+            const btn = document.getElementById("btn-delete-pl");
+            btn.querySelector("span").textContent = "[...]";
+            btn.disabled = true;
+
+            try {
+                await apiFetch(`/api/admin/playlists/${pid}`, {
+                    method: "DELETE"
+                });
+                document.getElementById("save-users-msg").textContent = "Playlist eliminada.";
+                document.getElementById("save-users-msg").style.display = "block";
+                document.getElementById("save-users-msg").style.color = "var(--px-green)";
+                document.getElementById("admin-pl-select").value = "";
+                document.getElementById("admin-users-list").innerHTML = "";
+                document.getElementById("btn-save-users").disabled = true;
+                btn.style.display = "none";
+                await loadAdminData();
+            } catch (e) {
+                alert("Error al eliminar: " + e.message);
+            } finally {
+                btn.querySelector("span").textContent = "ELIMINAR";
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById("btn-save-users")?.addEventListener("click", async () => {
+            const pid = document.getElementById("admin-pl-select").value;
+            if (!pid) return;
+
+            const btn = document.getElementById("btn-save-users");
+            const msg = document.getElementById("save-users-msg");
+
+            const cbs = document.querySelectorAll(".admin-user-cb");
+            const user_ids = Array.from(cbs).filter(c => c.checked).map(c => c.value);
+
+            btn.querySelector("span").textContent = "[ GUARDANDO... ]";
+            btn.disabled = true;
+
+            try {
+                await apiFetch(`/api/admin/playlists/${pid}/users`, {
+                    method: "POST",
+                    body: JSON.stringify({ user_ids })
+                });
+                msg.textContent = "Permisos actualizados.";
+                msg.style.display = "block"; msg.style.color = "var(--px-green)";
+            } catch (e) {
+                msg.textContent = "Error: " + e.message;
+                msg.style.display = "block"; msg.style.color = "var(--px-red)";
+            } finally {
+                btn.querySelector("span").textContent = "GUARDAR PERMISOS";
+                btn.disabled = false;
+            }
+        });
+
+        // ── CARGAR RANKING (LEADERBOARD) ──
+        async function loadLeaderboard(playlistId) {
+            const container = document.getElementById("ranking-list-container");
+            if (!container) return;
+
+            if (!playlistId) {
+                container.innerHTML = `<p style="font-family:var(--font-pixel); font-size:7px; color:var(--px-cream-dim); text-align:center; padding:10px;">Selecciona una playlist para ver el ranking</p>`;
+                return;
+            }
+
+            try {
+                const leaderboard = await apiFetch(`/api/songs/leaderboard/${playlistId}`);
+                if (leaderboard.length === 0) {
+                    container.innerHTML = `<p style="font-family:var(--font-pixel); font-size:7px; color:var(--px-cream-dim); text-align:center; padding:10px;">Sin puntuaciones aún</p>`;
+                    return;
+                }
+
+                container.innerHTML = leaderboard.map((row, index) => {
+                    const avatarStyle = row.avatar_url && row.avatar_url.startsWith("http") ? `background-image:url('${row.avatar_url}'); background-size:cover;` : "";
+                    const avatarContent = row.avatar_url && row.avatar_url.startsWith("http") ? "" : "👤";
+
+                    return `
+                        <div class="ranking-row">
+                            <span class="ranking-num">${index + 1}</span>
+                            <div class="ranking-avatar" style="${avatarStyle}">${avatarContent}</div>
+                            <span class="ranking-name">@${row.username}</span>
+                            <span class="ranking-points">${row.score}★</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error("Error al cargar el ranking:", err);
+                container.innerHTML = `<p style="font-family:var(--font-pixel); font-size:7px; color:var(--px-red); text-align:center; padding:10px;">Error al cargar ranking</p>`;
+            }
+        }
+
+        async function updatePlaylistCooldown(playlistId) {
+            const songInput = document.getElementById("song-url-input");
+            const btnSubmit = document.getElementById("btn-submit");
+            const bubble = document.getElementById("hero-bubble");
+
+            if (!songInput || !btnSubmit) return;
+
+            if (!playlistId) {
+                songInput.disabled = true;
+                btnSubmit.disabled = true;
+                songInput.placeholder = "Selecciona una playlist...";
+                return;
+            }
+
+            try {
+                const res = await apiFetch(`/api/songs/cooldown/${playlistId}`);
+                if (res.cooldown) {
+                    // Está en cooldown (ya subió una canción hoy)
+                    songInput.disabled = true;
+                    btnSubmit.disabled = true;
+                    songInput.placeholder = "Ya subiste una canción hoy a esta playlist...";
+
+                    // Mostrar zzz de Doris
+                    if (bubble) {
+                        bubble.classList.add("show");
+                        bubble.textContent = "*zzz*... ya cumpliste hoy~";
+                    }
+                } else {
+                    // No está en cooldown
+                    songInput.disabled = false;
+                    btnSubmit.disabled = false;
+                    songInput.placeholder = "https://www.youtube.com/watch?... o youtu.be/...";
+                    if (bubble) {
+                        bubble.classList.remove("show");
+                        bubble.textContent = "¡SUELTA TU CANCIÓN HOY!";
+                    }
+                }
+            } catch (err) {
+                console.error("Error al consultar cooldown:", err);
+            }
+        }
+
+        // Listener para cambio de playlist en el formulario
+        document.getElementById("song-playlist-select")?.addEventListener("change", (e) => {
+            loadLeaderboard(e.target.value);
+            updatePlaylistCooldown(e.target.value);
+        });
+
+        // ── MENÚ DESPLEGABLE DE USUARIO ──
+        const menuTrigger = document.getElementById("user-menu-trigger");
+        const userDropdown = document.getElementById("user-dropdown");
+
+        menuTrigger?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const visible = userDropdown.style.display === "block";
+            userDropdown.style.display = visible ? "none" : "block";
+        });
+
+        document.addEventListener("click", () => {
+            if (userDropdown) userDropdown.style.display = "none";
+        });
+
+        // Click en Cerrar Sesión
+        document.getElementById("btn-menu-logout")?.addEventListener("click", handleLogout);
+
+        // Abrir modal de perfil
+        document.getElementById("btn-menu-cuenta")?.addEventListener("click", () => {
+            document.getElementById("profile-modal").style.display = "flex";
+            document.getElementById("profile-msg").style.display = "none";
+        });
+
+        // Cerrar modal de perfil
+        document.getElementById("btn-close-profile-modal")?.addEventListener("click", () => {
+            document.getElementById("profile-modal").style.display = "none";
+        });
+
+
+
+        // ── GESTIÓN DE PERFIL EN MODAL ──
+        const btnSelectAvatar = document.getElementById("btn-select-avatar");
+        const avatarFileInput = document.getElementById("avatar-file-input");
+
+        btnSelectAvatar?.addEventListener("click", () => {
+            avatarFileInput?.click();
+        });
+
+        avatarFileInput?.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validar tamaño (1MB)
+            if (file.size > 1024 * 1024) {
+                alert("El archivo supera el límite de 1MB.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const token = localStorage.getItem("dorisk_token");
+            const preview = document.getElementById("profile-modal-avatar-preview");
+            const originalContent = preview.innerHTML;
+            preview.textContent = "⌛";
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/profile/avatar`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || "Error al subir avatar");
+                }
+
+                const data = await response.json();
+
+                // Actualizar previsualización
+                preview.innerHTML = `<img src="${data.avatar_url}" style="width:100%; height:100%; object-fit:cover; border-radius:0;"/>`;
+
+                // Actualizar avatar en el header
+                const headerAvatar = document.getElementById("header-avatar");
+                if (headerAvatar) {
+                    headerAvatar.innerHTML = `<img src="${data.avatar_url}" style="width:100%; height:100%; object-fit:cover; border-radius:0;"/>`;
+                }
+
+                // Recargar el feed para actualizar los avatares en la lista de canciones
+                loadFeed();
+            } catch (err) {
+                alert("Error: " + err.message);
+                preview.innerHTML = originalContent;
+            }
+        });
+
+        document.getElementById("btn-save-profile")?.addEventListener("click", async () => {
+            const username = document.getElementById("profile-username-input").value.trim();
+            const password = document.getElementById("profile-password-input").value.trim();
+            const msg = document.getElementById("profile-msg");
+            const btn = document.getElementById("btn-save-profile");
+
+            if (!username) {
+                msg.textContent = "El nombre de usuario no puede estar vacío";
+                msg.style.color = "var(--px-red)";
+                msg.style.display = "block";
+                return;
+            }
+
+            btn.querySelector("span").textContent = "[ GUARDANDO... ]";
+            btn.disabled = true;
+            msg.style.display = "none";
+
+            try {
+                const body = { username };
+                if (password) body.password = password;
+
+                await apiFetch("/api/auth/profile/update", {
+                    method: "POST",
+                    body: JSON.stringify(body)
+                });
+
+                msg.textContent = "¡Cambios guardados con éxito!";
+                msg.style.color = "var(--px-green)";
+                msg.style.display = "block";
+
+                // Actualizar localmente
+                localStorage.setItem("dorisk_user", username);
+                document.getElementById('username-display').textContent = `@${username}`;
+                document.getElementById("profile-password-input").value = "";
+
+                // Recargar datos
+                loadFeed();
+            } catch (err) {
+                msg.textContent = err.message;
+                msg.style.color = "var(--px-red)";
+                msg.style.display = "block";
+            } finally {
+                btn.querySelector("span").textContent = "GUARDAR CAMBIOS";
+                btn.disabled = false;
+            }
+        });
+
+        // Llamar a loadDevMode inmediatamente si ya tenemos token
+        (function () {
+            const token = localStorage.getItem("dorisk_token");
+            if (token) {
+                loadDevMode();
+            }
+        })();
+
+    </script>
+
+</body>
+
+</html>
