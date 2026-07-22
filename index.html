@@ -59,27 +59,6 @@
                     <span>[ ENTRAR ]</span>
                 </button>
 
-                <div class="login-divider">
-                    <div class="login-divider-line"></div>
-                    <span class="login-divider-txt">O</span>
-                    <div class="login-divider-line"></div>
-                </div>
-
-                <button class="btn-google" onclick="handleGoogleLogin()">
-                    <svg width="16" height="16" viewBox="0 0 16 16" style="image-rendering:pixelated">
-                        <rect x="7" y="1" width="5" height="2" fill="#4285f4" />
-                        <rect x="12" y="3" width="2" height="2" fill="#4285f4" />
-                        <rect x="13" y="5" width="2" height="3" fill="#4285f4" />
-                        <rect x="8" y="8" width="5" height="2" fill="#4285f4" />
-                        <rect x="2" y="5" width="11" height="1" fill="rgba(0,0,0,0)" />
-                        <rect x="1" y="6" width="2" height="4" fill="#34a853" />
-                        <rect x="3" y="10" width="3" height="2" fill="#fbbc05" />
-                        <rect x="6" y="12" width="4" height="2" fill="#ea4335" />
-                        <rect x="10" y="10" width="3" height="2" fill="#ea4335" />
-                        <rect x="13" y="7" width="2" height="3" fill="#4285f4" />
-                    </svg>
-                    CONTINUAR CON GOOGLE
-                </button>
 
                 <div class="login-register">
                     ¿No tienes cuenta? <a href="#" onclick="switchTab('register');return false;">CREAR UNA</a>
@@ -1019,10 +998,6 @@
             }
         }
 
-        function handleGoogleLogin() {
-            alert("Redirigiendo a Google OAuth...");
-            window.location.href = `${API_URL}/api/auth/youtube`;
-        }
 
         // ── COUNTDOWN REAL HASTA MEDIANOCHE UTC ──
         function updateCountdown() {
