@@ -1,11 +1,10 @@
 fastapi
 uvicorn[standard]
-python-dotenv
+pydantic
 supabase
 google-genai
-spotipy
 google-api-python-client
 google-auth-oauthlib
-google-auth-httplib2
-httpx
-email-validator
+spotipy
+python-dotenv
+python-multipart
