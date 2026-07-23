@@ -76,23 +76,34 @@ def is_youtube_authorized() -> bool:
 def get_video_details(video_id: str) -> dict:
     """
     Obtiene el título crudo de un video de YouTube para pasárselo a Gemini.
+    Usa oEmbed primero (no requiere auth) y falla silenciosamente si no puede.
     """
-    creds = get_credentials()
-    if not creds:
-        # Fallback de prueba
-        return {"raw_title": f"Video de YouTube {video_id}"}
-        
     try:
-        youtube = build("youtube", "v3", credentials=creds)
-        res = youtube.videos().list(part="snippet", id=video_id).execute()
-        items = res.get("items", [])
-        if items:
-            title = items[0]["snippet"]["title"]
-            return {"raw_title": title}
-        return {"raw_title": "Video Desconocido"}
-    except Exception as e:
-        print(f"❌ Error al obtener detalles del video {video_id}: {e}")
-        return {"raw_title": f"Video {video_id}"}
+        url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+        req = urllib.request.Request(
+            url, 
+            headers={'User-Agent': 'Mozilla/5.0'}
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if data and "title" in data:
+                return {"raw_title": data["title"]}
+    except Exception as oe_err:
+        print(f"⚠️ oEmbed falló para el video {video_id}: {oe_err}")
+
+    # Fallback API si hay credenciales
+    creds = get_credentials()
+    if creds:
+        try:
+            youtube = build("youtube", "v3", credentials=creds)
+            res = youtube.videos().list(part="snippet", id=video_id).execute()
+            items = res.get("items", [])
+            if items:
+                return {"raw_title": items[0]["snippet"]["title"]}
+        except Exception as e:
+            print(f"❌ Error al obtener detalles del video {video_id} via API: {e}")
+
+    return {"raw_title": f"Video de YouTube {video_id}"}
 
 def get_playlist_details(playlist_id: str) -> str:
     """
