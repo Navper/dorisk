@@ -95,6 +95,22 @@ async def login_user(data: LoginRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail="Credenciales incorrectas")
 
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+
+@router.post("/reset-password-request")
+async def request_password_reset(data: ResetPasswordRequest):
+    if not supabase_client:
+        return {"message": "Modo desarrollo: link de reseteo falso enviado."}
+        
+    try:
+        # Supabase enviará un correo con un link que apunta al SITE_URL con #access_token=...&type=recovery
+        supabase_client.auth.reset_password_for_email(data.email)
+        return {"message": "Si el correo está registrado, recibirás un enlace de recuperación."}
+    except Exception as e:
+        # Por seguridad no revelamos si el correo existe o no
+        return {"message": "Si el correo está registrado, recibirás un enlace de recuperación."}
+
 class ProfileUpdateRequest(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
@@ -149,6 +165,12 @@ async def upload_avatar(file: UploadFile = File(...), user: AppUser = Depends(ge
         
     try:
         contents = await file.read()
+        
+        # Limitar tamaño a 60MB
+        max_size = 60 * 1024 * 1024  # 60MB en bytes
+        if len(contents) > max_size:
+            raise HTTPException(status_code=400, detail="El archivo es demasiado grande. Máximo 60MB.")
+        
         file_path = f"{user_id}_avatar.png"
         
         # Subir con override

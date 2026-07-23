@@ -54,6 +54,9 @@
                     <label class="login-field-label">▸ CONTRASEÑA</label>
                     <input type="password" class="login-input" id="login-pass" placeholder="••••••••"
                         autocomplete="current-password">
+                    <div style="text-align: right; margin-top: 5px;">
+                        <a href="#" onclick="showForgotPasswordModal();return false;" style="font-family: var(--font-pixel); font-size: 7px; color: var(--px-rose-dim); text-decoration: none;">He olvidado mi contraseña</a>
+                    </div>
                 </div>
                 <button class="btn-login" id="btn-login" onclick="handleLogin()">
                     <span>[ ENTRAR ]</span>
@@ -328,6 +331,38 @@
             </div>
         </div>
     </div>
+    <!-- ── FORGOT PASSWORD MODAL ── -->
+    <div id="forgot-password-modal" class="modal-overlay hidden" style="z-index: 10000; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: flex; flex-direction: column;">
+        <div class="panel" style="width: 300px; max-width: 90%; background: var(--px-bg-lighter);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h3 style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream);">RECUPERAR CONTRASEÑA</h3>
+                <button onclick="closeForgotPasswordModal()" style="background:none;border:none;color:var(--px-rose);cursor:pointer;font-family:var(--font-pixel);">[X]</button>
+            </div>
+            <div class="login-field">
+                <label class="login-field-label">▸ TU EMAIL</label>
+                <input type="email" class="login-input" id="forgot-pass-email" placeholder="ejemplo@correo.com">
+            </div>
+            <div id="forgot-pass-msg" style="font-family: var(--font-pixel); font-size: 8px; margin-bottom: 10px; min-height: 10px;"></div>
+            <button class="btn-login" id="btn-forgot-pass" onclick="handleForgotPassword()">
+                <span>[ ENVIAR ENLACE ]</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── SET NEW PASSWORD MODAL ── -->
+    <div id="reset-password-modal" class="modal-overlay hidden" style="z-index: 10001; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: flex; flex-direction: column;">
+        <div class="panel" style="width: 300px; max-width: 90%; background: var(--px-bg-lighter);">
+            <h3 style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream); margin-bottom: 20px;">NUEVA CONTRASEÑA</h3>
+            <div class="login-field">
+                <label class="login-field-label">▸ NUEVA CONTRASEÑA</label>
+                <input type="password" class="login-input" id="reset-pass-new" placeholder="••••••••">
+            </div>
+            <div id="reset-pass-msg" style="font-family: var(--font-pixel); font-size: 8px; color: var(--px-red); margin-bottom: 10px; min-height: 10px;"></div>
+            <button class="btn-login" id="btn-reset-pass" onclick="handleResetPassword()">
+                <span>[ GUARDAR CONTRASEÑA ]</span>
+            </button>
+        </div>
+    </div>
 
     <!-- ── USER PROFILE MODAL ── -->
     <div id="profile-modal"
@@ -515,6 +550,14 @@
         let PLAYLISTS = [];
         let openPlaylistId = null;
 
+        // Utilidad anti-XSS: escapa caracteres HTML peligrosos
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         // Wrapper de fetch con autenticación
         async function apiFetch(endpoint, options = {}) {
             const token = localStorage.getItem("dorisk_token");
@@ -630,10 +673,10 @@
                             <span class="sub-num">${String(i + 1).padStart(2, '0')}</span>
                             <div class="sub-art" style="${artStyle}">${artContent}</div>
                             <div class="sub-info">
-                                <p class="sub-track">${s.track}</p>
-                                <p class="sub-artist">${s.artist}</p>
+                                <p class="sub-track">${escapeHTML(s.track)}</p>
+                                <p class="sub-artist">${escapeHTML(s.artist)}</p>
                                 <div class="sub-meta">
-                                    <span class="sub-by">por <span>${s.by}</span></span>
+                                    <span class="sub-by">por <span>${escapeHTML(s.by)}</span></span>
                                 </div>
                             </div>
                         </a>
@@ -815,11 +858,11 @@
                         <div class="history-card${h.trophy === '🏆' ? ' gold-border' : ''}">
                             <div class="history-trophy${h.trophy === '🏆' ? ' gold' : ''}">${h.trophy}</div>
                             <div class="history-info">
-                                <p class="history-week${i === 0 ? ' latest' : ''}">▸ ${h.week_label}</p>
-                                <p class="history-track">${h.track}</p>
-                                <p class="history-artist">${h.artist}</p>
+                                <p class="history-week${i === 0 ? ' latest' : ''}">▸ ${escapeHTML(h.week_label)}</p>
+                                <p class="history-track">${escapeHTML(h.track)}</p>
+                                <p class="history-artist">${escapeHTML(h.artist)}</p>
                                 <div class="history-meta">
-                                    <span class="history-by">por <span>${h.submitted_by}</span></span>
+                                    <span class="history-by">por <span>${escapeHTML(h.submitted_by)}</span></span>
                                 </div>
                             </div>
                             <div class="history-score-block">
@@ -842,10 +885,10 @@
                                 <div class="history-mini-card">
                                     <div class="history-mini-trophy">${h.trophy}</div>
                                     <div class="history-mini-info">
-                                        <p class="history-mini-week">${label}</p>
-                                        <p class="history-mini-track" title="${h.track}">${h.track}</p>
-                                        <p class="history-mini-artist" title="${h.artist}">${h.artist}</p>
-                                        <p class="history-mini-by">por <span>${h.submitted_by}</span></p>
+                                        <p class="history-mini-week">${escapeHTML(label)}</p>
+                                        <p class="history-mini-track" title="${escapeHTML(h.track)}">${escapeHTML(h.track)}</p>
+                                        <p class="history-mini-artist" title="${escapeHTML(h.artist)}">${escapeHTML(h.artist)}</p>
+                                        <p class="history-mini-by">por <span>${escapeHTML(h.submitted_by)}</span></p>
                                     </div>
                                     <div class="history-mini-score">${h.score}★</div>
                                 </div>
@@ -1082,6 +1125,20 @@
 
         // ── INICIALIZACIÓN AL CARGAR LA PÁGINA ──
         window.addEventListener("load", () => {
+            // Check for password recovery token in URL hash
+            const hash = window.location.hash;
+            if (hash && hash.includes("type=recovery") && hash.includes("access_token=")) {
+                const params = new URLSearchParams(hash.substring(1));
+                const token = params.get("access_token");
+                if (token) {
+                    localStorage.setItem("dorisk_token", token);
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById("reset-password-modal").classList.remove("hidden");
+                    history.replaceState(null, "", window.location.pathname + window.location.search);
+                    return;
+                }
+            }
+
             const token = localStorage.getItem("dorisk_token");
             if (token) {
                 initApp(token, localStorage.getItem("dorisk_user"));
@@ -1090,6 +1147,64 @@
                 document.getElementById('app-sidebar').style.display = 'none';
             }
         });
+
+        // ── PASSWORD RECOVERY ──
+        function showForgotPasswordModal() {
+            document.getElementById("forgot-password-modal").classList.remove("hidden");
+            document.getElementById("forgot-pass-msg").textContent = "";
+        }
+        function closeForgotPasswordModal() {
+            document.getElementById("forgot-password-modal").classList.add("hidden");
+        }
+        async function handleForgotPassword() {
+            const email = document.getElementById("forgot-pass-email").value.trim();
+            const msgEl = document.getElementById("forgot-pass-msg");
+            if (!email) {
+                msgEl.textContent = "▸ INGRESA TU EMAIL";
+                msgEl.style.color = "var(--px-red)";
+                return;
+            }
+            msgEl.textContent = "ENVIANDO...";
+            msgEl.style.color = "var(--px-cream-dim)";
+            try {
+                const res = await fetch(`${API_URL}/api/auth/reset-password-request`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                msgEl.textContent = data.message || "Enlace enviado.";
+                msgEl.style.color = "var(--px-green)";
+            } catch (err) {
+                msgEl.textContent = "Error de red.";
+                msgEl.style.color = "var(--px-red)";
+            }
+        }
+        async function handleResetPassword() {
+            const pass = document.getElementById("reset-pass-new").value.trim();
+            const msgEl = document.getElementById("reset-pass-msg");
+            if (pass.length < 6) {
+                msgEl.textContent = "Mínimo 6 caracteres.";
+                return;
+            }
+            const btn = document.getElementById("btn-reset-pass");
+            btn.disabled = true;
+            btn.querySelector("span").textContent = "[ GUARDANDO... ]";
+            try {
+                const res = await apiFetch("/api/auth/profile/update", {
+                    method: "POST",
+                    body: JSON.stringify({ password: pass })
+                });
+                alert("Contraseña actualizada con éxito.");
+                document.getElementById("reset-password-modal").classList.add("hidden");
+                // Reload to initialize app normally with the new session
+                window.location.reload();
+            } catch (err) {
+                msgEl.textContent = err.message || "Error al actualizar.";
+                btn.disabled = false;
+                btn.querySelector("span").textContent = "[ GUARDAR CONTRASEÑA ]";
+            }
+        }
 
         // ── ENTER KEY TRIGGERS FOR LOGIN/REGISTRATION ──
         ['login-user', 'login-pass'].forEach(id => {
