@@ -31,25 +31,40 @@ def get_flow():
     )
 
 def get_credentials() -> Credentials:
-    """Carga y refresca las credenciales almacenadas si existen"""
-    if not os.path.exists(TOKEN_PATH):
-        return None
+    """Carga y refresca las credenciales almacenadas si existen (desde archivo o variable de entorno)"""
+    info = None
     
-    try:
-        with open(TOKEN_PATH, "r") as f:
-            info = json.load(f)
+    # 1. Intentar cargar desde variable de entorno (para Render / Producción)
+    env_tokens = os.getenv("YOUTUBE_TOKENS_JSON")
+    if env_tokens:
+        try:
+            info = json.loads(env_tokens)
+        except Exception as e:
+            print(f"❌ Error parseando YOUTUBE_TOKENS_JSON env: {e}")
+            
+    # 2. Si no hay variable de entorno, intentar desde archivo local
+    if not info and os.path.exists(TOKEN_PATH):
+        try:
+            with open(TOKEN_PATH, "r") as f:
+                info = json.load(f)
+        except Exception as e:
+            print(f"❌ Error leyendo {TOKEN_PATH}: {e}")
+            
+    if not info:
+        return None
         
+    try:
         credentials = Credentials.from_authorized_user_info(info, SCOPES)
         
         # Refrescar el token si ha expirado
         if credentials and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
-            # Guardar el token refrescado
+            # Guardar el token refrescado si tenemos acceso a escribir en archivo local
             save_credentials(credentials)
             
         return credentials
     except Exception as e:
-        print(f"❌ Error al cargar credenciales de YouTube: {e}")
+        print(f"❌ Error al procesar credenciales de YouTube: {e}")
         return None
 
 def save_credentials(credentials: Credentials):
