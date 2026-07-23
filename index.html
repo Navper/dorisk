@@ -332,34 +332,34 @@
         </div>
     </div>
     <!-- ── FORGOT PASSWORD MODAL ── -->
-    <div id="forgot-password-modal" class="modal-overlay hidden" style="z-index: 10000; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: flex; flex-direction: column;">
-        <div class="panel" style="width: 300px; max-width: 90%; background: var(--px-bg-lighter);">
+    <div id="forgot-password-modal" style="z-index: 10000; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: none; flex-direction: column;">
+        <div class="panel" style="width: 320px; max-width: 90%; background: var(--px-panel); padding: 30px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                <h3 style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream);">RECUPERAR CONTRASEÑA</h3>
-                <button onclick="closeForgotPasswordModal()" style="background:none;border:none;color:var(--px-rose);cursor:pointer;font-family:var(--font-pixel);">[X]</button>
+                <h3 style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream); line-height: 1.4;">RECUPERAR<br>CONTRASEÑA</h3>
+                <button onclick="closeForgotPasswordModal()" style="background:none;border:none;color:var(--px-rose);cursor:pointer;font-family:var(--font-pixel); font-size: 14px;">[X]</button>
             </div>
             <div class="login-field">
                 <label class="login-field-label">▸ TU EMAIL</label>
                 <input type="email" class="login-input" id="forgot-pass-email" placeholder="ejemplo@correo.com">
             </div>
-            <div id="forgot-pass-msg" style="font-family: var(--font-pixel); font-size: 8px; margin-bottom: 10px; min-height: 10px;"></div>
-            <button class="btn-login" id="btn-forgot-pass" onclick="handleForgotPassword()">
-                <span>[ ENVIAR ENLACE ]</span>
+            <div id="forgot-pass-msg" style="font-family: var(--font-pixel); font-size: 8px; margin-bottom: 15px; min-height: 10px;"></div>
+            <button class="btn-main" id="btn-forgot-pass" onclick="handleForgotPassword()" style="width: 100%; padding: 15px;">
+                <span class="btn-main-txt">[ ENVIAR ]</span>
             </button>
         </div>
     </div>
 
     <!-- ── SET NEW PASSWORD MODAL ── -->
-    <div id="reset-password-modal" class="modal-overlay hidden" style="z-index: 10001; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: flex; flex-direction: column;">
-        <div class="panel" style="width: 300px; max-width: 90%; background: var(--px-bg-lighter);">
-            <h3 style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream); margin-bottom: 20px;">NUEVA CONTRASEÑA</h3>
+    <div id="reset-password-modal" style="z-index: 10001; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: none; flex-direction: column;">
+        <div class="panel" style="width: 320px; max-width: 90%; background: var(--px-panel); padding: 30px;">
+            <h3 style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream); margin-bottom: 20px; line-height: 1.4;">NUEVA<br>CONTRASEÑA</h3>
             <div class="login-field">
                 <label class="login-field-label">▸ NUEVA CONTRASEÑA</label>
                 <input type="password" class="login-input" id="reset-pass-new" placeholder="••••••••">
             </div>
-            <div id="reset-pass-msg" style="font-family: var(--font-pixel); font-size: 8px; color: var(--px-red); margin-bottom: 10px; min-height: 10px;"></div>
-            <button class="btn-login" id="btn-reset-pass" onclick="handleResetPassword()">
-                <span>[ GUARDAR CONTRASEÑA ]</span>
+            <div id="reset-pass-msg" style="font-family: var(--font-pixel); font-size: 8px; color: var(--px-red); margin-bottom: 15px; min-height: 10px;"></div>
+            <button class="btn-main" id="btn-reset-pass" onclick="handleResetPassword()" style="width: 100%; padding: 15px;">
+                <span class="btn-main-txt">[ GUARDAR ]</span>
             </button>
         </div>
     </div>
@@ -1132,8 +1132,8 @@
                 const token = params.get("access_token");
                 if (token) {
                     localStorage.setItem("dorisk_token", token);
-                    document.getElementById('login-screen').classList.add('hidden');
-                    document.getElementById("reset-password-modal").classList.remove("hidden");
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById("reset-password-modal").style.display = "flex";
                     history.replaceState(null, "", window.location.pathname + window.location.search);
                     return;
                 }
@@ -1150,11 +1150,11 @@
 
         // ── PASSWORD RECOVERY ──
         function showForgotPasswordModal() {
-            document.getElementById("forgot-password-modal").classList.remove("hidden");
+            document.getElementById("forgot-password-modal").style.display = "flex";
             document.getElementById("forgot-pass-msg").textContent = "";
         }
         function closeForgotPasswordModal() {
-            document.getElementById("forgot-password-modal").classList.add("hidden");
+            document.getElementById("forgot-password-modal").style.display = "none";
         }
         async function handleForgotPassword() {
             const email = document.getElementById("forgot-pass-email").value.trim();
@@ -1196,7 +1196,7 @@
                     body: JSON.stringify({ password: pass })
                 });
                 alert("Contraseña actualizada con éxito.");
-                document.getElementById("reset-password-modal").classList.add("hidden");
+                document.getElementById("reset-password-modal").style.display = "none";
                 // Reload to initialize app normally with the new session
                 window.location.reload();
             } catch (err) {
