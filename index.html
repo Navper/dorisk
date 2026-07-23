@@ -55,7 +55,9 @@
                     <input type="password" class="login-input" id="login-pass" placeholder="••••••••"
                         autocomplete="current-password">
                     <div style="text-align: right; margin-top: 5px;">
-                        <a href="#" onclick="showForgotPasswordModal();return false;" style="font-family: var(--font-pixel); font-size: 7px; color: var(--px-rose-dim); text-decoration: none;">He olvidado mi contraseña</a>
+                        <a href="#" onclick="showForgotPasswordModal();return false;"
+                            style="font-family: var(--font-pixel); font-size: 7px; color: var(--px-rose-dim); text-decoration: none;">He
+                            olvidado mi contraseña</a>
                     </div>
                 </div>
                 <button class="btn-login" id="btn-login" onclick="handleLogin()">
@@ -332,33 +334,44 @@
         </div>
     </div>
     <!-- ── FORGOT PASSWORD MODAL ── -->
-    <div id="forgot-password-modal" style="z-index: 10000; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: none; flex-direction: column;">
+    <div id="forgot-password-modal"
+        style="z-index: 10000; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: none; flex-direction: column;">
         <div class="panel" style="width: 320px; max-width: 90%; background: var(--px-panel); padding: 30px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                <h3 style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream); line-height: 1.4;">RECUPERAR<br>CONTRASEÑA</h3>
-                <button onclick="closeForgotPasswordModal()" style="background:none;border:none;color:var(--px-rose);cursor:pointer;font-family:var(--font-pixel); font-size: 14px;">[X]</button>
+                <h3 style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream); line-height: 1.4;">
+                    RECUPERAR<br>CONTRASEÑA</h3>
+                <button onclick="closeForgotPasswordModal()"
+                    style="background:none;border:none;color:var(--px-rose);cursor:pointer;font-family:var(--font-pixel); font-size: 14px;">[X]</button>
             </div>
             <div class="login-field">
                 <label class="login-field-label">▸ TU EMAIL</label>
                 <input type="email" class="login-input" id="forgot-pass-email" placeholder="ejemplo@correo.com">
             </div>
-            <div id="forgot-pass-msg" style="font-family: var(--font-pixel); font-size: 8px; margin-bottom: 15px; min-height: 10px;"></div>
-            <button class="btn-main" id="btn-forgot-pass" onclick="handleForgotPassword()" style="width: 100%; padding: 15px;">
+            <div id="forgot-pass-msg"
+                style="font-family: var(--font-pixel); font-size: 8px; margin-bottom: 15px; min-height: 10px;"></div>
+            <button class="btn-main" id="btn-forgot-pass" onclick="handleForgotPassword()"
+                style="width: 100%; padding: 15px;">
                 <span class="btn-main-txt">[ ENVIAR ]</span>
             </button>
         </div>
     </div>
 
     <!-- ── SET NEW PASSWORD MODAL ── -->
-    <div id="reset-password-modal" style="z-index: 10001; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: none; flex-direction: column;">
+    <div id="reset-password-modal"
+        style="z-index: 10001; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(18,8,32,0.95); display: none; flex-direction: column;">
         <div class="panel" style="width: 320px; max-width: 90%; background: var(--px-panel); padding: 30px;">
-            <h3 style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream); margin-bottom: 20px; line-height: 1.4;">NUEVA<br>CONTRASEÑA</h3>
+            <h3
+                style="font-family: var(--font-pixel); font-size: 14px; color: var(--px-cream); margin-bottom: 20px; line-height: 1.4;">
+                NUEVA<br>CONTRASEÑA</h3>
             <div class="login-field">
                 <label class="login-field-label">▸ NUEVA CONTRASEÑA</label>
                 <input type="password" class="login-input" id="reset-pass-new" placeholder="••••••••">
             </div>
-            <div id="reset-pass-msg" style="font-family: var(--font-pixel); font-size: 8px; color: var(--px-red); margin-bottom: 15px; min-height: 10px;"></div>
-            <button class="btn-main" id="btn-reset-pass" onclick="handleResetPassword()" style="width: 100%; padding: 15px;">
+            <div id="reset-pass-msg"
+                style="font-family: var(--font-pixel); font-size: 8px; color: var(--px-red); margin-bottom: 15px; min-height: 10px;">
+            </div>
+            <button class="btn-main" id="btn-reset-pass" onclick="handleResetPassword()"
+                style="width: 100%; padding: 15px;">
                 <span class="btn-main-txt">[ GUARDAR ]</span>
             </button>
         </div>
@@ -544,8 +557,8 @@
         // ════════════════════════════════════════
 
         // Cambia la URL de Render cuando lo despliegues
-        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:8000' 
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8000'
             : 'https://dorisk.onrender.com';
         let PLAYLISTS = [];
         let openPlaylistId = null;
