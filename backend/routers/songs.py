@@ -18,7 +18,7 @@ class VoteRequest(BaseModel):
 
 def get_cooldown_remaining(user_id: str, playlist_id: str) -> Optional[float]:
     """
-    Retorna los segundos restantes antes de poder subir una canción (límite de 24h por playlist).
+    Retorna los segundos restantes antes de poder subir una canción (reinicio diario a medianoche UTC).
     """
     if not admin_client:
         return None
@@ -36,10 +36,13 @@ def get_cooldown_remaining(user_id: str, playlist_id: str) -> Optional[float]:
             last_date_str = res.data[0]["created_at"]
             last_date = datetime.fromisoformat(last_date_str.replace("Z", "+00:00")).astimezone(timezone.utc)
             now = datetime.now(timezone.utc)
-            elapsed = now - last_date
             
-            if elapsed < timedelta(hours=24):
-                return (timedelta(hours=24) - elapsed).total_seconds()
+            start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # Si la última canción se subió en el día UTC actual, está en cooldown hasta la siguiente medianoche
+            if last_date >= start_of_day:
+                next_midnight = start_of_day + timedelta(days=1)
+                return (next_midnight - now).total_seconds()
     except Exception as e:
         print(f"Error al verificar cooldown: {e}")
         

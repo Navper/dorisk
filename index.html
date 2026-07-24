@@ -1055,25 +1055,20 @@
         }
 
 
-        // ── COUNTDOWN REAL BASADO EN EL COOLDOWN PERSONAL ──
-        let activeCooldownInterval = null;
-        let cooldownTargetTime = null;
+        // ── COUNTDOWN GLOBAL REINICIO DIARIO (MEDIANOCHE UTC) ──
+        let globalCountdownInterval = null;
 
-        function startCooldownTimer(secondsLeft, playlistId) {
-            if (activeCooldownInterval) clearInterval(activeCooldownInterval);
-            cooldownTargetTime = Date.now() + (secondsLeft * 1000);
+        function startGlobalCountdown() {
+            if (globalCountdownInterval) clearInterval(globalCountdownInterval);
 
             function tick() {
-                const now = Date.now();
-                const diff = cooldownTargetTime - now;
+                const now = new Date();
+                const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+                const diff = tomorrow - now;
 
                 if (diff <= 0) {
-                    clearInterval(activeCooldownInterval);
-                    activeCooldownInterval = null;
-                    document.getElementById("cd-hours").textContent = "00";
-                    document.getElementById("cd-mins").textContent = "00";
-                    document.getElementById("cd-secs").textContent = "00";
-                    updatePlaylistCooldown(playlistId);
+                    const select = document.getElementById("song-playlist-select");
+                    if (select && select.value) updatePlaylistCooldown(select.value);
                     return;
                 }
 
@@ -1087,15 +1082,7 @@
             }
 
             tick();
-            activeCooldownInterval = setInterval(tick, 1000);
-        }
-
-        function stopCooldownTimer() {
-            if (activeCooldownInterval) clearInterval(activeCooldownInterval);
-            activeCooldownInterval = null;
-            document.getElementById("cd-hours").textContent = "00";
-            document.getElementById("cd-mins").textContent = "00";
-            document.getElementById("cd-secs").textContent = "00";
+            globalCountdownInterval = setInterval(tick, 1000);
         }
 
         // ── CARGAR PERFIL DE USUARIO ──
@@ -1590,7 +1577,6 @@
                 songInput.disabled = true;
                 btnSubmit.disabled = true;
                 songInput.placeholder = "Selecciona una playlist...";
-                stopCooldownTimer();
                 if (cdLabel) cdLabel.textContent = "■ SELECCIONA UNA PLAYLIST";
                 return;
             }
@@ -1598,20 +1584,19 @@
             try {
                 const res = await apiFetch(`/api/songs/cooldown/${playlistId}`);
                 if (res.cooldown) {
-                    // Está en cooldown (ya subió una canción a esta playlist en las últimas 24h)
+                    // Ya subió canción hoy en este turno de 24h
                     songInput.disabled = true;
                     btnSubmit.disabled = true;
-                    songInput.placeholder = "Ya subiste una canción a esta playlist en las últimas 24h...";
+                    songInput.placeholder = "Ya subiste tu canción de hoy a esta playlist...";
 
                     if (bubble) {
                         bubble.classList.add("show");
                         bubble.textContent = "*zzz*... ya cumpliste hoy~";
                     }
 
-                    if (cdLabel) cdLabel.textContent = "■ TIEMPO RESTANTE DE COOLDOWN (24H)";
-                    startCooldownTimer(res.seconds_left, playlistId);
+                    if (cdLabel) cdLabel.textContent = "■ SIGUIENTE TURNO DIARIO ABRE EN";
                 } else {
-                    // No está en cooldown
+                    // No ha subido canción en este turno diario
                     songInput.disabled = false;
                     btnSubmit.disabled = false;
                     songInput.placeholder = "https://www.youtube.com/watch?... o youtu.be/...";
@@ -1620,9 +1605,9 @@
                         bubble.textContent = "¡SUELTA TU CANCIÓN HOY!";
                     }
 
-                    if (cdLabel) cdLabel.textContent = "■ ¡SLOT DISPONIBLE! PUEDES SUBIR TU CANCIÓN";
-                    stopCooldownTimer();
+                    if (cdLabel) cdLabel.textContent = "■ ¡TURNO ABIERTO! TIEMPO RESTANTE PARA HOY";
                 }
+                startGlobalCountdown();
             } catch (err) {
                 console.error("Error al consultar cooldown:", err);
             }
