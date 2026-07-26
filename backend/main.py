@@ -43,6 +43,33 @@ app.include_router(songs.router)
 app.include_router(history.router)
 app.include_router(admin.router)
 
+# Programador de tareas en segundo plano (Lunes 02:00 AM España / 00:00 UTC)
+import asyncio
+from datetime import datetime, timezone
+
+last_sweep_week = None
+
+async def weekly_sweep_scheduler():
+    global last_sweep_week
+    while True:
+        try:
+            now = datetime.now(timezone.utc)
+            current_week = now.strftime("%Y-W%W")
+            # Lunes (weekday 0) a las 00:00 UTC (02:00 AM hora de España)
+            if now.weekday() == 0 and now.hour == 0 and last_sweep_week != current_week:
+                from backend.weekly_sweep import run_weekly_sweep
+                print("⏰ [Scheduler] Ejecutando cierre semanal automático (Lunes 02:00 AM España)...")
+                run_weekly_sweep()
+                last_sweep_week = current_week
+        except Exception as e:
+            print(f"❌ Error en scheduler semanal: {e}")
+            
+        await asyncio.sleep(60)
+
+@app.on_event("startup")
+async def start_scheduler():
+    asyncio.create_task(weekly_sweep_scheduler())
+
 @app.get("/")
 async def root():
     return {
