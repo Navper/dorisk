@@ -17,12 +17,15 @@ app = FastAPI(
     openapi_url="/openapi.json" if DEV_MODE else None,
 )
 
-# CORS restringido: solo los orígenes autorizados pueden llamar a la API
+# CORS restringido
 allowed_origins = [
-    "http://localhost:5500",       # Live Server local
+    "http://localhost:5500",
     "http://127.0.0.1:5500",
-    "http://localhost:8000",       # Backend local
-    "https://dorisk.vercel.app",   # Frontend producción
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://dorisk.vercel.app",
 ]
 
 app.add_middleware(

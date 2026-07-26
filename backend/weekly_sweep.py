@@ -88,27 +88,20 @@ def run_weekly_sweep():
                 "art_url": winner_song["art_url"]
             }
             
+            # 1. Registrar ganador en la tabla `weekly_winners`
             admin_client.table("weekly_winners").insert(winner_data).execute()
             print(f"🏆 [{playlist_name}] Ganador: {winner_song['title']} de {winner_song['artist']} con {winner_avg}★")
             
-            # Eliminar votos de canciones de esta playlist
+            # 2. Eliminar la playlist finalizada de Dorisk (la playlist original en YouTube NUNCA se borra ni vacía)
             song_ids = [s["id"] for s in songs]
             if song_ids:
                 admin_client.table("votes").delete().in_("song_id", song_ids).execute()
-            
-            # Eliminar canciones de esta playlist en base de datos
             admin_client.table("songs").delete().eq("playlist_id", playlist_id).execute()
+            admin_client.table("playlist_users").delete().eq("playlist_id", playlist_id).execute()
+            admin_client.table("playlists").delete().eq("id", playlist_id).execute()
+            print(f"📦 [{playlist_name}] Season finalizada. Playlist archivada intacta en YouTube.")
             
-            # Vaciar playlist de YouTube si existe
-            youtube_id = pl.get("youtube_id")
-            if youtube_id:
-                try:
-                    from backend.services.youtube_client import remove_all_videos_from_playlist
-                    remove_all_videos_from_playlist(youtube_id)
-                except Exception as yt_err:
-                    print(f"⚠️ [YouTube] Falló al vaciar playlist {youtube_id} en sweep: {yt_err}")
-            
-        print("🧹 Cierre semanal completado para todas las playlists.")
+        print("🧹 Cierre de temporada completado para todas las playlists.")
         return True
     except Exception as e:
         print(f"❌ Error durante el cierre semanal: {e}")
