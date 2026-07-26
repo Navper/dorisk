@@ -61,7 +61,7 @@ async def register_user(data: RegisterRequest):
 @router.post("/login")
 async def login_user(data: LoginRequest):
     if not supabase_client:
-        return {"token": "dummy-dev-token", "username": data.username_or_email}
+        return {"token": "dummy-dev-token", "username": data.username_or_email or "Developer"}
 
     email = data.username_or_email
     
@@ -202,8 +202,13 @@ async def upload_avatar(file: UploadFile = File(...), user: AppUser = Depends(ge
 @router.get("/profile")
 async def get_profile(user: AppUser = Depends(get_current_user)):
     user_id = user.id
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="BD no configurada")
+    if not admin_client or user_id == "00000000-0000-0000-0000-000000000000":
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "avatar_url": f"https://api.dicebear.com/7.x/pixel-art/svg?seed={user.username}"
+        }
         
     res = admin_client.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
     if not res.data:

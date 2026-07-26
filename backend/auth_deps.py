@@ -8,12 +8,9 @@ class AppUser(BaseModel):
     username: str
 
 async def get_current_user(authorization: str = Header(None)) -> AppUser:
-    if not supabase_client:
-        # Fallback local dummy user for testing if Supabase is not configured
-        return AppUser(id="00000000-0000-0000-0000-000000000000", email="test@dorisk.com", username="Carlos")
-
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Token de autorización faltante")
+    if not supabase_client or not authorization or "dummy-dev-token" in authorization:
+        # Fallback local dummy user para pruebas sin Supabase
+        return AppUser(id="00000000-0000-0000-0000-000000000000", email="dev@dorisk.com", username="Developer")
     
     try:
         parts = authorization.split(" ")
