@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from backend.db import supabase_client
+from backend.config import DEV_MODE
 
 router = APIRouter(prefix="/api/history", tags=["history"])
 
@@ -55,6 +56,14 @@ async def get_weekly_winners_history():
             
         if res.data and len(res.data) > 0:
             return res.data
-        return SIMULATED_WINNERS
+            
+        # En produccion (DEV_MODE=False), devolver lista vacia si no hay ganadores en BD.
+        # Solo mostrar simulacion si DEV_MODE es True (Local).
+        if DEV_MODE:
+            return SIMULATED_WINNERS
+            
+        return []
     except Exception as e:
-        return SIMULATED_WINNERS
+        if DEV_MODE:
+            return SIMULATED_WINNERS
+        return []
