@@ -79,82 +79,7 @@ async def get_today_feed(user: AppUser = Depends(get_current_user)):
     user_id = user.id
     
     if not admin_client:
-        return [
-            {
-                "id": "pl-1",
-                "name": "TECHNO/ELECTRO BETA SEASON",
-                "emoji": "🎧",
-                "gradient": "linear-gradient(135deg,#3a2255,#7c5fa0)",
-                "tracks": 2,
-                "platforms": ["yt"],
-                "songs": [
-                    {
-                        "id": "s1",
-                        "title": "Strobe",
-                        "artist": "deadmau5",
-                        "art_url": "https://img.youtube.com/vi/tKi9Z-f6qX4/hqdefault.jpg",
-                        "youtube_video_id": "tKi9Z-f6qX4",
-                        "submitted_by": "capoeira",
-                        "avg_score": 6.9,
-                        "is_owner": False,
-                        "user_vote": 7
-                    },
-                    {
-                        "id": "s2",
-                        "title": "fun TIME (Omega 2.0 Edit)",
-                        "artist": "Kobaryo",
-                        "art_url": "https://img.youtube.com/vi/OAoQLkXiruo/hqdefault.jpg",
-                        "youtube_video_id": "OAoQLkXiruo",
-                        "submitted_by": "cristian",
-                        "avg_score": 6.5,
-                        "is_owner": False,
-                        "user_vote": None
-                    }
-                ]
-            },
-            {
-                "id": "pl-2",
-                "name": "CULTURAS DEL MUNDO",
-                "emoji": "🌍",
-                "gradient": "linear-gradient(135deg,#3a2255,#7c5fa0)",
-                "tracks": 1,
-                "platforms": ["yt"],
-                "songs": [
-                    {
-                        "id": "s3",
-                        "title": "Chan Chan",
-                        "artist": "Buena Vista Social Club",
-                        "art_url": "https://img.youtube.com/vi/o5cELP06Mik/hqdefault.jpg",
-                        "youtube_video_id": "o5cELP06Mik",
-                        "submitted_by": "mariana",
-                        "avg_score": 6.8,
-                        "is_owner": False,
-                        "user_vote": None
-                    }
-                ]
-            },
-            {
-                "id": "pl-3",
-                "name": "METAL BETA SEASON",
-                "emoji": "🎸",
-                "gradient": "linear-gradient(135deg,#3a2255,#7c5fa0)",
-                "tracks": 1,
-                "platforms": ["yt"],
-                "songs": [
-                    {
-                        "id": "s4",
-                        "title": "Dethrone",
-                        "artist": "Bad Omens",
-                        "art_url": "https://img.youtube.com/vi/1N1LlhS-pYg/hqdefault.jpg",
-                        "youtube_video_id": "1N1LlhS-pYg",
-                        "submitted_by": "alex",
-                        "avg_score": 6.7,
-                        "is_owner": False,
-                        "user_vote": None
-                    }
-                ]
-            }
-        ]
+        return []
         
     try:
         # 1. Obtener las playlists a las que el usuario tiene acceso
@@ -318,12 +243,7 @@ async def check_playlist_cooldown(playlist_id: str, user: AppUser = Depends(get_
 @router.get("/leaderboard/{playlist_id}")
 async def get_playlist_leaderboard(playlist_id: str, user = Depends(get_current_user)):
     if not admin_client:
-        return [
-            {"username": "capoeira", "avatar_url": "https://api.dicebear.com/7.x/pixel-art/svg?seed=capoeira", "score": 28},
-            {"username": "cristian", "avatar_url": "https://api.dicebear.com/7.x/pixel-art/svg?seed=cristian", "score": 24},
-            {"username": "mariana", "avatar_url": "https://api.dicebear.com/7.x/pixel-art/svg?seed=mariana", "score": 20},
-            {"username": "alex", "avatar_url": "https://api.dicebear.com/7.x/pixel-art/svg?seed=alex", "score": 18}
-        ]
+        return []
         
     try:
         # 1. Obtener todos los IDs de usuario asociados a esta playlist
