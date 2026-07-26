@@ -66,13 +66,21 @@ async def create_playlist(data: PlaylistCreate, user = Depends(get_current_user)
 @router.delete("/playlists/{playlist_id}")
 async def delete_playlist(playlist_id: str, user = Depends(get_current_user)):
     check_admin(user)
-    if not DEV_MODE:
-        raise HTTPException(status_code=403, detail="Esta acción solo está permitida en DEV_MODE.")
     if not admin_client:
         raise HTTPException(status_code=500, detail="Base de datos no configurada")
     
+    # 1. Obtener canciones de esta playlist para limpiar sus votos
+    songs_res = admin_client.table("songs").select("id").eq("playlist_id", playlist_id).execute()
+    song_ids = [s["id"] for s in (songs_res.data or [])]
+    if song_ids:
+        admin_client.table("votes").delete().in_("song_id", song_ids).execute()
+    
+    # 2. Limpiar canciones, accesos y la propia playlist en la BD de Dorisk (YouTube NUNCA se toca)
+    admin_client.table("songs").delete().eq("playlist_id", playlist_id).execute()
+    admin_client.table("playlist_users").delete().eq("playlist_id", playlist_id).execute()
     admin_client.table("playlists").delete().eq("id", playlist_id).execute()
-    return {"message": "Playlist eliminada"}
+    
+    return {"message": "Playlist eliminada de la app Dorisk (YouTube permanece intacto como archivo)"}
 
 @router.get("/playlists/{playlist_id}/users")
 async def get_playlist_users(playlist_id: str, user = Depends(get_current_user)):

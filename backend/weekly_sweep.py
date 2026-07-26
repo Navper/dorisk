@@ -41,7 +41,6 @@ def run_weekly_sweep():
                 continue
                 
             leaderboard = []
-            
             song_ids = [s["id"] for s in songs]
             votes_res = admin_client.table("votes").select("song_id, score").in_("song_id", song_ids).execute()
             votes = votes_res.data or []
@@ -53,7 +52,6 @@ def run_weekly_sweep():
             for s in songs:
                 song_id = s["id"]
                 scores = votes_by_song[song_id]
-                
                 avg = round(sum(scores) / len(scores), 1) if scores else 0.0
                 
                 leaderboard.append({
@@ -62,19 +60,14 @@ def run_weekly_sweep():
                     "votes_count": len(scores)
                 })
                 
+            # Ordenar para obtener SOLO el 1er puesto (Ganador de la semana)
             leaderboard.sort(key=lambda x: (x["average"], x["votes_count"]), reverse=True)
             winner_entry = leaderboard[0]
             winner_song = winner_entry["song"]
             winner_avg = winner_entry["average"]
             
-            # Contar ganadores anteriores de esta playlist para el trofeo
-            history_count = admin_client.table("weekly_winners") \
-                .select("id", count="exact") \
-                .eq("playlist_id", playlist_id) \
-                .execute()
-            count = history_count.count or 0
-            trophy = "🏆" if count == 0 else ("🥈" if count == 1 else "🥉")
-            
+            # Siempre trofeo de oro 🏆 para el ganador de la semana
+            trophy = "🏆"
             username = winner_song.get("profiles", {}).get("username", "Desconocido") if winner_song.get("profiles") else "Desconocido"
             
             winner_data = {
@@ -88,20 +81,12 @@ def run_weekly_sweep():
                 "art_url": winner_song["art_url"]
             }
             
-            # 1. Registrar ganador en la tabla `weekly_winners`
+            # Registrar el ganador en la tabla `weekly_winners`
             admin_client.table("weekly_winners").insert(winner_data).execute()
-            print(f"🏆 [{playlist_name}] Ganador: {winner_song['title']} de {winner_song['artist']} con {winner_avg}★")
+            print(f"🏆 [{playlist_name}] Ganador de la semana guardado: {winner_song['title']} de {winner_song['artist']} ({winner_avg}★)")
+            # NOTA: Las canciones y la playlist se mantienen intactas en la web y en YouTube.
             
-            # 2. Eliminar la playlist finalizada de Dorisk (la playlist original en YouTube NUNCA se borra ni vacía)
-            song_ids = [s["id"] for s in songs]
-            if song_ids:
-                admin_client.table("votes").delete().in_("song_id", song_ids).execute()
-            admin_client.table("songs").delete().eq("playlist_id", playlist_id).execute()
-            admin_client.table("playlist_users").delete().eq("playlist_id", playlist_id).execute()
-            admin_client.table("playlists").delete().eq("id", playlist_id).execute()
-            print(f"📦 [{playlist_name}] Season finalizada. Playlist archivada intacta en YouTube.")
-            
-        print("🧹 Cierre de temporada completado para todas las playlists.")
+        print("🧹 Cierre semanal completado. Ganadores registrados, canciones y playlists intactas.")
         return True
     except Exception as e:
         print(f"❌ Error durante el cierre semanal: {e}")
