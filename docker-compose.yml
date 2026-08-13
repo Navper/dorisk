@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  dorisk:
+    build: .
+    container_name: dorisk_app
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    environment:
+      - PORT=8000
