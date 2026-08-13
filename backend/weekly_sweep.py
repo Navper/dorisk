@@ -1,94 +1,93 @@
+import uuid
 from datetime import datetime, timezone, timedelta
-from backend.db import admin_client
+from backend.db_local import get_db
 
 def run_weekly_sweep():
     """
     Realiza el cierre semanal automático de Dorisk:
-    1. Para CADA playlist, calcula el ganador de la semana.
-    2. Lo registra en la tabla `weekly_winners`.
-    3. Limpia las canciones y votos de la semana.
+    1. Para CADA playlist, calcula el ganador de la semana (1er puesto).
+    2. Lo registra en la tabla `weekly_winners` con trofeo 🏆.
+    3. Mantiene intactas las canciones en la web y en YouTube.
     """
-    if not admin_client:
-        print("⚠️ [Cierre Semanal] Supabase no está configurado. Operación omitida.")
-        return False
-        
     try:
-        # Obtener todas las playlists activas
-        pl_res = admin_client.table("playlists").select("id, name, youtube_id").execute()
-        playlists = pl_res.data or []
-        
-        if not playlists:
-            print("🟢 [Cierre Semanal] No hay playlists registradas.")
-            return True
-        
-        today = datetime.now(timezone.utc)
-        start_date = today - timedelta(days=7)
-        week_label = f"SEMANA {start_date.strftime('%W')} ({start_date.strftime('%d %b').upper()} - {today.strftime('%d %b').upper()})"
-        
-        for pl in playlists:
-            playlist_id = pl["id"]
-            playlist_name = pl["name"]
+        with get_db() as conn:
+            cursor = conn.cursor()
             
-            # Obtener canciones de esta playlist
-            songs_res = admin_client.table("songs") \
-                .select("*, profiles(username)") \
-                .eq("playlist_id", playlist_id) \
-                .execute()
-            songs = songs_res.data or []
+            # Obtener todas las playlists activas
+            cursor.execute("SELECT id, name, youtube_id FROM playlists")
+            playlists = cursor.fetchall()
             
-            if not songs:
-                print(f"🟢 [Cierre Semanal] Playlist '{playlist_name}': sin canciones esta semana.")
-                continue
+            if not playlists:
+                print("[SWEEP] No hay playlists registradas.")
+                return True
+            
+            today = datetime.now(timezone.utc)
+            start_date = today - timedelta(days=7)
+            week_label = f"SEMANA {start_date.strftime('%W')} ({start_date.strftime('%d %b').upper()} - {today.strftime('%d %b').upper()})"
+            
+            for pl in playlists:
+                playlist_id = pl["id"]
+                playlist_name = pl["name"]
                 
-            leaderboard = []
-            song_ids = [s["id"] for s in songs]
-            votes_res = admin_client.table("votes").select("song_id, score").in_("song_id", song_ids).execute()
-            votes = votes_res.data or []
-            
-            votes_by_song = {sid: [] for sid in song_ids}
-            for v in votes:
-                votes_by_song[v["song_id"]].append(v["score"])
-            
-            for s in songs:
-                song_id = s["id"]
-                scores = votes_by_song[song_id]
-                avg = round(sum(scores) / len(scores), 1) if scores else 0.0
+                # Obtener canciones de esta playlist en los últimos 7 días
+                cursor.execute("""
+                    SELECT s.id, s.title, s.artist, s.art_url, u.username
+                    FROM songs s
+                    LEFT JOIN users u ON s.user_id = u.id
+                    WHERE s.playlist_id = ? AND s.created_at >= ?
+                """, (playlist_id, start_date.isoformat()))
+                songs = cursor.fetchall()
                 
-                leaderboard.append({
-                    "song": s,
-                    "average": avg,
-                    "votes_count": len(scores)
-                })
+                if not songs:
+                    print(f"[SWEEP] Playlist '{playlist_name}': sin canciones esta semana.")
+                    continue
+                    
+                leaderboard = []
+                song_ids = [s["id"] for s in songs]
+                placeholders = ",".join("?" * len(song_ids))
                 
-            # Ordenar para obtener SOLO el 1er puesto (Ganador de la semana)
-            leaderboard.sort(key=lambda x: (x["average"], x["votes_count"]), reverse=True)
-            winner_entry = leaderboard[0]
-            winner_song = winner_entry["song"]
-            winner_avg = winner_entry["average"]
+                cursor.execute(f"SELECT song_id, score FROM votes WHERE song_id IN ({placeholders})", song_ids)
+                votes_rows = cursor.fetchall()
+                
+                votes_by_song = {sid: [] for sid in song_ids}
+                for v in votes_rows:
+                    votes_by_song[v["song_id"]].append(v["score"])
+                
+                for s in songs:
+                    song_id = s["id"]
+                    scores = votes_by_song[song_id]
+                    avg = round(sum(scores) / len(scores), 1) if scores else 0.0
+                    leaderboard.append({
+                        "song": s,
+                        "average": avg,
+                        "votes_count": len(scores)
+                    })
+                    
+                # Ordenar para obtener SOLO el 1er puesto (Ganador de la semana)
+                leaderboard.sort(key=lambda x: (x["average"], x["votes_count"]), reverse=True)
+                winner_entry = leaderboard[0]
+                winner_song = winner_entry["song"]
+                winner_avg = winner_entry["average"]
+                
+                username = winner_song["username"] or "Desconocido"
+                winner_id = str(uuid.uuid4())
+                now_iso = today.isoformat()
+                
+                # Registrar ganador en `weekly_winners`
+                cursor.execute("""
+                    INSERT INTO weekly_winners (id, playlist_id, week_label, track, artist, submitted_by, score, trophy, art_url, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    winner_id, playlist_id, f"{week_label} · {playlist_name}",
+                    winner_song["title"], winner_song["artist"], f"@{username}",
+                    winner_avg, "🏆", winner_song["art_url"], now_iso
+                ))
+                print(f"[WINNER] [{playlist_name}] Ganador guardado: {winner_song['title']} ({winner_avg})")
+                
+            conn.commit()
             
-            # Siempre trofeo de oro 🏆 para el ganador de la semana
-            trophy = "🏆"
-            username = winner_song.get("profiles", {}).get("username", "Desconocido") if winner_song.get("profiles") else "Desconocido"
-            
-            winner_data = {
-                "playlist_id": playlist_id,
-                "week_label": f"{week_label} · {playlist_name}",
-                "track": winner_song["title"],
-                "artist": winner_song["artist"],
-                "submitted_by": f"@{username}",
-                "score": winner_avg,
-                "trophy": trophy,
-                "art_url": winner_song["art_url"]
-            }
-            
-            # Registrar el ganador en la tabla `weekly_winners`
-            admin_client.table("weekly_winners").insert(winner_data).execute()
-            print(f"🏆 [{playlist_name}] Ganador de la semana guardado: {winner_song['title']} de {winner_song['artist']} ({winner_avg}★)")
-            # NOTA: Las canciones y la playlist se mantienen intactas en la web y en YouTube.
-            
-        print("🧹 Cierre semanal completado. Ganadores registrados, canciones y playlists intactas.")
+        print("[SWEEP] Cierre semanal completado. Ganadores registrados, canciones y playlists intactas.")
         return True
     except Exception as e:
-        print(f"❌ Error durante el cierre semanal: {e}")
+        print(f"[ERROR] Error durante el cierre semanal: {e}")
         return False
-

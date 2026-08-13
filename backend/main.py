@@ -86,6 +86,14 @@ async def root():
         "description": "¡La canción del día está lista!"
     }
 
+@app.get("/static/avatars/{filename}")
+async def serve_avatar(filename: str):
+    from backend.db_local import AVATARS_DIR
+    file_path = os.path.join(AVATARS_DIR, filename)
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="Avatar no encontrado")
+
 @app.get("/{filename:path}")
 async def serve_static_files(filename: str):
     file_path = os.path.join(root_dir, filename)

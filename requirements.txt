@@ -9,3 +9,5 @@ google-auth-oauthlib
 spotipy
 python-dotenv
 python-multipart
+bcrypt
+pyjwt

@@ -1,6 +1,9 @@
 from fastapi import Header, HTTPException
-from backend.db import supabase_client
 from pydantic import BaseModel
+from typing import Optional
+from backend.auth_service import decode_access_token
+from backend.db_local import get_db
+from backend.config import ADMIN_EMAIL
 
 class AppUser(BaseModel):
     id: str
@@ -8,9 +11,6 @@ class AppUser(BaseModel):
     username: str
 
 async def get_current_user(authorization: str = Header(None)) -> AppUser:
-    if not supabase_client:
-        return AppUser(id="00000000-0000-0000-0000-000000000000", email="dev@dorisk.com", username="Developer")
-        
     if not authorization:
         raise HTTPException(status_code=401, detail="Token de autorización faltante")
     
@@ -20,24 +20,37 @@ async def get_current_user(authorization: str = Header(None)) -> AppUser:
             raise HTTPException(status_code=401, detail="Formato de token inválido. Usar 'Bearer <token>'")
         
         token = parts[1]
-        # Validar el token con Supabase
-        res = supabase_client.auth.get_user(token)
-        if not res or not res.user:
+        
+        # Validar y decodificar el token JWT nativo
+        payload = decode_access_token(token)
+        if not payload or "sub" not in payload:
             raise HTTPException(status_code=401, detail="Token inválido o expirado")
-        # Verificar aprobación
-        from backend.db import admin_client
-        from backend.config import ADMIN_EMAIL
-        if admin_client:
-            if res.user.email != ADMIN_EMAIL:
-                profile_res = admin_client.table("profiles").select("is_approved").eq("id", res.user.id).maybe_single().execute()
-                if profile_res and profile_res.data:
-                    if not profile_res.data.get("is_approved", False):
-                        raise HTTPException(
-                            status_code=403,
-                            detail="Tu cuenta está pendiente de aprobación por el administrador."
-                        )
-        meta = getattr(res.user, "user_metadata", {}) or {}
-        username = meta.get("username", res.user.email.split("@")[0])
-        return AppUser(id=res.user.id, email=res.user.email, username=username)
+        
+        user_id = payload["sub"]
+        
+        # Buscar usuario en la base de datos local SQLite
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, email, username, is_approved FROM users WHERE id = ?", (user_id,))
+            user_row = cursor.fetchone()
+            
+            if not user_row:
+                raise HTTPException(status_code=401, detail="Usuario no encontrado")
+            
+            email = user_row["email"]
+            username = user_row["username"]
+            is_approved = user_row["is_approved"]
+            
+            # Verificar aprobación si no es administrador
+            if email != ADMIN_EMAIL and not is_approved:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Tu cuenta está pendiente de aprobación por el administrador."
+                )
+            
+            return AppUser(id=user_id, email=email, username=username)
+            
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Error de autenticación: {str(e)}")

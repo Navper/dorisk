@@ -1,10 +1,12 @@
+import uuid
+from datetime import datetime, timezone
+from typing import List
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
-from typing import List
 
 from backend.config import DEV_MODE, ADMIN_EMAIL
 from backend.auth_deps import get_current_user, AppUser
-from backend.db import admin_client
+from backend.db_local import get_db
 from backend.services.youtube_client import get_playlist_details
 from backend.weekly_sweep import run_weekly_sweep
 
@@ -16,156 +18,112 @@ class PlaylistCreate(BaseModel):
 class PlaylistAssign(BaseModel):
     user_ids: List[str]
 
+class ApproveUserRequest(BaseModel):
+    approve: bool
+
 def check_admin(user: AppUser):
-    if not user.email or user.email != ADMIN_EMAIL:
+    if not user.email or user.email.lower() != ADMIN_EMAIL.lower():
         raise HTTPException(status_code=403, detail="Acceso denegado: esta acción requiere permisos de administrador.")
 
 @router.get("/config")
 async def get_config(user = Depends(get_current_user)):
-    """Retorna la configuración actual."""
     try:
         check_admin(user)
     except HTTPException:
         return {"dev_mode": False}
         
-    if not DEV_MODE:
-        return {"dev_mode": False}
-        
-    return {
-        "dev_mode": True
-    }
+    return {"dev_mode": True}
 
 @router.get("/playlists")
 async def get_playlists(user = Depends(get_current_user)):
     check_admin(user)
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="Base de datos no configurada")
-    res = admin_client.table("playlists").select("*").order("created_at", desc=False).execute()
-    return res.data
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM playlists ORDER BY created_at ASC")
+        return [dict(row) for row in cursor.fetchall()]
 
 @router.post("/playlists")
 async def create_playlist(data: PlaylistCreate, user = Depends(get_current_user)):
     check_admin(user)
-    if not DEV_MODE:
-        raise HTTPException(status_code=403, detail="Esta acción solo está permitida en DEV_MODE.")
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="Base de datos no configurada")
-    
     name = get_playlist_details(data.youtube_id)
-    user_id = user.id
+    new_id = str(uuid.uuid4())
+    now_iso = datetime.now(timezone.utc).isoformat()
     
-    new_pl = {
-        "name": name,
-        "youtube_id": data.youtube_id,
-        "created_by": user_id
-    }
-    
-    res = admin_client.table("playlists").insert(new_pl).execute()
-    return res.data[0] if res.data else {"error": "No se pudo crear"}
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO playlists (id, name, youtube_id, created_by, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (new_id, name, data.youtube_id, user.id, now_iso))
+        conn.commit()
+        
+        cursor.execute("SELECT * FROM playlists WHERE id = ?", (new_id,))
+        return dict(cursor.fetchone())
 
 @router.delete("/playlists/{playlist_id}")
 async def delete_playlist(playlist_id: str, user = Depends(get_current_user)):
     check_admin(user)
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="Base de datos no configurada")
-    
-    # 1. Obtener canciones de esta playlist para limpiar sus votos
-    songs_res = admin_client.table("songs").select("id").eq("playlist_id", playlist_id).execute()
-    song_ids = [s["id"] for s in (songs_res.data or [])]
-    if song_ids:
-        admin_client.table("votes").delete().in_("song_id", song_ids).execute()
-    
-    # 2. Limpiar canciones, accesos y la propia playlist en la BD de Dorisk (YouTube NUNCA se toca)
-    admin_client.table("songs").delete().eq("playlist_id", playlist_id).execute()
-    admin_client.table("playlist_users").delete().eq("playlist_id", playlist_id).execute()
-    admin_client.table("playlists").delete().eq("id", playlist_id).execute()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        # 1. Limpiar votos asociados a canciones de esta playlist
+        cursor.execute("DELETE FROM votes WHERE song_id IN (SELECT id FROM songs WHERE playlist_id = ?)", (playlist_id,))
+        # 2. Limpiar canciones, accesos y playlist
+        cursor.execute("DELETE FROM songs WHERE playlist_id = ?", (playlist_id,))
+        cursor.execute("DELETE FROM playlist_users WHERE playlist_id = ?", (playlist_id,))
+        cursor.execute("DELETE FROM playlists WHERE id = ?", (playlist_id,))
+        conn.commit()
     
     return {"message": "Playlist eliminada de la app Dorisk (YouTube permanece intacto como archivo)"}
 
 @router.get("/playlists/{playlist_id}/users")
 async def get_playlist_users(playlist_id: str, user = Depends(get_current_user)):
     check_admin(user)
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="BD no configurada")
-    
-    res = admin_client.table("playlist_users").select("user_id").eq("playlist_id", playlist_id).execute()
-    return [r["user_id"] for r in res.data]
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM playlist_users WHERE playlist_id = ?", (playlist_id,))
+        return [r["user_id"] for r in cursor.fetchall()]
 
 @router.post("/playlists/{playlist_id}/users")
 async def assign_playlist_users(playlist_id: str, data: PlaylistAssign, user = Depends(get_current_user)):
     check_admin(user)
-    if not DEV_MODE:
-        raise HTTPException(status_code=403, detail="Esta acción solo está permitida en DEV_MODE.")
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="Base de datos no configurada")
-    
-    # Eliminar todos y recrear (estrategia simple)
-    admin_client.table("playlist_users").delete().eq("playlist_id", playlist_id).execute()
-    
-    inserts = [{"playlist_id": playlist_id, "user_id": uid} for uid in data.user_ids]
-    if inserts:
-        admin_client.table("playlist_users").insert(inserts).execute()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM playlist_users WHERE playlist_id = ?", (playlist_id,))
+        for uid in data.user_ids:
+            cursor.execute("INSERT INTO playlist_users (playlist_id, user_id) VALUES (?, ?)", (playlist_id, uid))
+        conn.commit()
         
     return {"message": "Usuarios actualizados"}
-
-class ApproveUserRequest(BaseModel):
-    approve: bool
 
 @router.post("/users/{user_id}/approve")
 async def approve_user(user_id: str, data: ApproveUserRequest, user = Depends(get_current_user)):
     check_admin(user)
-    if not DEV_MODE:
-        raise HTTPException(status_code=403, detail="Esta acción solo está permitida en DEV_MODE.")
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="BD no configurada")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        if data.approve:
+            cursor.execute("UPDATE users SET is_approved = 1 WHERE id = ?", (user_id,))
+            msg = "Usuario aprobado con éxito."
+        else:
+            cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            msg = "Usuario rechazado y eliminado con éxito."
+        conn.commit()
         
-    if data.approve:
-        admin_client.table("profiles").update({"is_approved": True}).eq("id", user_id).execute()
-        return {"message": "Usuario aprobado con éxito."}
-    else:
-        # Rechazar: eliminar el perfil y eliminar el usuario del auth de Supabase
-        admin_client.table("profiles").delete().eq("id", user_id).execute()
-        try:
-            admin_client.auth.admin.delete_user(user_id)
-        except Exception as e:
-            print(f"Error al eliminar usuario de auth: {e}")
-        return {"message": "Usuario rechazado y eliminado con éxito."}
+    return {"message": msg}
 
 @router.get("/users")
 async def get_all_users(user = Depends(get_current_user)):
     check_admin(user)
-    if not DEV_MODE:
-        raise HTTPException(status_code=403, detail="Esta acción solo está permitida en DEV_MODE.")
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="BD no configurada")
-    
-    # Intentar desde profiles primero
-    res = admin_client.table("profiles").select("id, username, email, is_approved").execute()
-    if res.data:
-        return res.data
-    
-    # Fallback: obtener directamente de auth.users via admin API
-    try:
-        auth_users = admin_client.auth.admin.list_users()
-        users = []
-        for u in auth_users:
-            meta = getattr(u, 'user_metadata', {}) or {}
-            users.append({
-                "id": u.id,
-                "username": meta.get("username", u.email.split("@")[0]),
-                "email": u.email,
-                "is_approved": True
-            })
-        return users
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener usuarios: {str(e)}")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, username, email, is_approved FROM users ORDER BY created_at DESC")
+        return [dict(r) for r in cursor.fetchall()]
 
 @router.post("/sweep")
 async def force_weekly_sweep(user: AppUser = Depends(get_current_user)):
     check_admin(user)
     success = run_weekly_sweep()
     if success:
-        return {"message": "Cierre semanal forzado con éxito. Playlists vaciadas y ganador guardado."}
+        return {"message": "Cierre semanal forzado con éxito. Ganadores registrados y playlists intactas."}
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

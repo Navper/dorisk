@@ -1,18 +1,15 @@
 from fastapi import APIRouter
-from backend.db import supabase_client
+from backend.db_local import get_db
 
 router = APIRouter(prefix="/api/history", tags=["history"])
 
 @router.get("")
 async def get_weekly_winners_history():
-    if not supabase_client:
-        return []
-        
     try:
-        res = supabase_client.table("weekly_winners") \
-            .select("*") \
-            .order("created_at", desc=True) \
-            .execute()
-        return res.data or []
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM weekly_winners ORDER BY created_at DESC")
+            return [dict(row) for row in cursor.fetchall()]
     except Exception as e:
+        print(f"Error cargando histórico de ganadores: {e}")
         return []

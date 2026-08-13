@@ -1,8 +1,14 @@
+import os
+import uuid
+from datetime import datetime, timezone
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel, EmailStr
-from backend.db import supabase_client, admin_client
+
+from backend.db_local import get_db, AVATARS_DIR
+from backend.auth_service import hash_password, verify_password, create_access_token
 from backend.auth_deps import get_current_user, AppUser
-from typing import Optional
+from backend.config import ADMIN_EMAIL
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -15,214 +21,161 @@ class LoginRequest(BaseModel):
     username_or_email: str
     password: str
 
+class ProfileUpdateRequest(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+
 @router.post("/register")
 async def register_user(data: RegisterRequest):
-    if not supabase_client:
-        return {"message": "Modo desarrollo: Registro de demostración exitoso", "token": "dummy-dev-token", "username": data.username}
-    
+    username = data.username.strip()
+    email = data.email.strip().lower()
+    password = data.password.strip()
+
+    if len(username) < 3:
+        raise HTTPException(status_code=400, detail="El nombre de usuario debe tener al menos 3 caracteres")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+
+    user_id = str(uuid.uuid4())
+    pwd_hash = hash_password(password)
+    avatar_url = f"https://api.dicebear.com/7.x/pixel-art/svg?seed={username}"
+    is_approved = 1  # Auto-aprobado o administrado
+    is_admin = 1 if email == ADMIN_EMAIL.lower() else 0
+    now_iso = datetime.now(timezone.utc).isoformat()
+
     try:
-        # Registrar en el auth de Supabase
-        res = supabase_client.auth.sign_up({
-            "email": data.email,
-            "password": data.password,
-            "options": {
-                "data": {
-                    "username": data.username
-                }
-            }
-        })
-        
-        # Insertar perfil publico usando el service_role (bypass RLS)
-        if res.user:
-            try:
-                if admin_client:
-                    profile_data = {
-                        "id": res.user.id,
-                        "username": data.username,
-                        "email": data.email,
-                        "avatar_url": f"https://api.dicebear.com/7.x/pixel-art/svg?seed={data.username}"
-                    }
-                    admin_client.table("profiles").upsert(profile_data).execute()
-                    print(f"Perfil creado exitosamente para {data.username}")
-                else:
-                    print("admin_client no configurado, perfil no creado")
-            except Exception as pe:
-                print(f"Nota: Error al crear perfil: {pe}")
-        
-        token = res.session.access_token if res.session else "token-pending-email-confirm"
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            # Verificar si ya existe usuario o email
+            cursor.execute("SELECT id FROM users WHERE username = ? OR email = ?", (username, email))
+            existing = cursor.fetchone()
+            if existing:
+                raise HTTPException(status_code=400, detail="El nombre de usuario o correo ya está registrado")
+
+            cursor.execute("""
+                INSERT INTO users (id, email, username, password_hash, avatar_url, is_approved, is_admin, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, email, username, pwd_hash, avatar_url, is_approved, is_admin, now_iso))
+            conn.commit()
+
+        token = create_access_token({"sub": user_id, "username": username, "email": email})
         return {
-            "message": "Registro completado",
+            "message": "Registro completado con éxito",
             "token": token,
-            "username": data.username
+            "username": username
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error en registro: {str(e)}")
 
 @router.post("/login")
 async def login_user(data: LoginRequest):
-    if not supabase_client:
-        return {"token": "dummy-dev-token", "username": data.username_or_email or "Developer"}
+    login_input = data.username_or_email.strip()
+    password = data.password.strip()
 
-    email = data.username_or_email
-    
-    # Si ingreso el username en lugar del email, buscamos el email en profiles
-    if "@" not in data.username_or_email:
-        try:
-            if admin_client:
-                profile = admin_client.table("profiles").select("email").eq("username", data.username_or_email).maybe_single().execute()
-                if profile and profile.data and profile.data.get("email"):
-                    email = profile.data["email"]
-                else:
-                    raise HTTPException(status_code=400, detail="Usuario no encontrado. Prueba con tu email.")
-            else:
-                raise HTTPException(status_code=400, detail="Configuracion incompleta del servidor.")
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error buscando usuario: {str(e)}")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        if "@" in login_input:
+            cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (login_input.lower(),))
+        else:
+            cursor.execute("SELECT * FROM users WHERE LOWER(username) = ?", (login_input.lower(),))
+            
+        user = cursor.fetchone()
 
-    try:
-        res = supabase_client.auth.sign_in_with_password({
-            "email": email,
-            "password": data.password
-        })
+    if not user:
+        raise HTTPException(status_code=400, detail="Usuario o contraseña incorrectos")
+
+    if not verify_password(password, user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Usuario o contraseña incorrectos")
+
+    # Verificar aprobación si no es administrador
+    if user["email"] != ADMIN_EMAIL and not user["is_approved"]:
+        raise HTTPException(status_code=403, detail="Tu cuenta está pendiente de aprobación por el administrador.")
+
+    token = create_access_token({
+        "sub": user["id"],
+        "username": user["username"],
+        "email": user["email"]
+    })
+
+    return {
+        "token": token,
+        "username": user["username"]
+    }
+
+@router.get("/profile")
+async def get_profile(user: AppUser = Depends(get_current_user)):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, username, email, avatar_url, is_approved, is_admin, created_at FROM users WHERE id = ?", (user.id,))
+        row = cursor.fetchone()
         
-        username = res.user.user_metadata.get("username", "Melomano")
-        return {
-            "token": res.session.access_token,
-            "username": username
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="Credenciales incorrectas")
-
-class ResetPasswordRequest(BaseModel):
-    email: EmailStr
-
-@router.post("/reset-password-request")
-async def request_password_reset(data: ResetPasswordRequest):
-    if not supabase_client:
-        return {"message": "Modo desarrollo: link de reseteo falso enviado."}
+    if not row:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
         
-    try:
-        # Supabase enviará un correo con un link que apunta al SITE_URL con #access_token=...&type=recovery
-        supabase_client.auth.reset_password_for_email(data.email)
-        return {"message": "Si el correo está registrado, recibirás un enlace de recuperación."}
-    except Exception as e:
-        # Por seguridad no revelamos si el correo existe o no
-        return {"message": "Si el correo está registrado, recibirás un enlace de recuperación."}
-
-class ProfileUpdateRequest(BaseModel):
-    username: Optional[str] = None
-    password: Optional[str] = None
+    return dict(row)
 
 @router.post("/profile/update")
 async def update_profile(data: ProfileUpdateRequest, user: AppUser = Depends(get_current_user)):
     user_id = user.id
-    
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="BD no configurada")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
         
-    try:
-        # 1. Si se cambia el nombre de usuario, validar y actualizar
+        # 1. Si cambia el nombre de usuario
         if data.username:
             new_username = data.username.strip()
             if len(new_username) < 3:
                 raise HTTPException(status_code=400, detail="El nombre de usuario debe tener al menos 3 caracteres")
                 
-            # Verificar si ya existe en profiles
-            existing = admin_client.table("profiles").select("id").eq("username", new_username).neq("id", user_id).execute()
-            if existing.data:
+            cursor.execute("SELECT id FROM users WHERE LOWER(username) = ? AND id != ?", (new_username.lower(), user_id))
+            if cursor.fetchone():
                 raise HTTPException(status_code=400, detail="El nombre de usuario ya está en uso")
                 
-            admin_client.table("profiles").update({"username": new_username}).eq("id", user_id).execute()
+            cursor.execute("UPDATE users SET username = ? WHERE id = ?", (new_username, user_id))
             
-        # 2. Si se cambia la contraseña, actualizarla en Supabase Auth usando admin client
+        # 2. Si cambia la contraseña
         if data.password:
             new_password = data.password.strip()
             if len(new_password) < 6:
                 raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+                
+            new_pwd_hash = hash_password(new_password)
+            cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_pwd_hash, user_id))
             
-            admin_client.auth.admin.update_user_by_id(
-                user_id,
-                attributes={"password": new_password}
-            )
-            
-        return {"message": "Perfil actualizado correctamente"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al actualizar perfil: {str(e)}")
+        conn.commit()
+
+    return {"message": "Perfil actualizado correctamente"}
 
 @router.post("/profile/avatar")
 async def upload_avatar(file: UploadFile = File(...), user: AppUser = Depends(get_current_user)):
     user_id = user.id
-    
-    if not admin_client:
-        raise HTTPException(status_code=500, detail="BD no configurada")
-        
+
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
-        
+
     try:
         contents = await file.read()
-        
-        # Limitar tamaño a 60MB
-        max_size = 60 * 1024 * 1024  # 60MB en bytes
+        max_size = 60 * 1024 * 1024  # 60MB
         if len(contents) > max_size:
             raise HTTPException(status_code=400, detail="El archivo es demasiado grande. Máximo 60MB.")
-        
-        file_path = f"{user_id}_avatar.png"
-        
-        # Subir con override
-        try:
-            admin_client.storage.from_("avatars").upload(
-                path=file_path,
-                file=contents,
-                file_options={"content-type": file.content_type, "x-upsert": "true"}
-            )
-        except Exception as upload_err:
-            try:
-                admin_client.storage.from_("avatars").remove([file_path])
-            except:
-                pass
-            admin_client.storage.from_("avatars").upload(
-                path=file_path,
-                file=contents,
-                file_options={"content-type": file.content_type}
-            )
-            
-        avatar_url = admin_client.storage.from_("avatars").get_public_url(file_path)
-        
-        admin_client.table("profiles").update({"avatar_url": avatar_url}).eq("id", user_id).execute()
-        
+
+        ext = file.filename.split(".")[-1] if "." in file.filename else "png"
+        filename = f"{user_id}.{ext}"
+        file_path = os.path.join(AVATARS_DIR, filename)
+
+        with open(file_path, "wb") as f:
+            f.write(contents)
+
+        avatar_url = f"/static/avatars/{filename}"
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE users SET avatar_url = ? WHERE id = ?", (avatar_url, user_id))
+            conn.commit()
+
         return {"message": "Avatar actualizado correctamente", "avatar_url": avatar_url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al subir avatar: {str(e)}")
-
-@router.get("/profile")
-async def get_profile(user: AppUser = Depends(get_current_user)):
-    user_id = user.id
-    if not admin_client or user_id == "00000000-0000-0000-0000-000000000000":
-        return {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "avatar_url": f"https://api.dicebear.com/7.x/pixel-art/svg?seed={user.username}"
-        }
-        
-    res = admin_client.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
-    if not res.data:
-        email = user.email
-        username = user.username
-        avatar_url = f"https://api.dicebear.com/7.x/pixel-art/svg?seed={username}"
-        profile_data = {
-            "id": user_id,
-            "username": username,
-            "email": email,
-            "avatar_url": avatar_url
-        }
-        admin_client.table("profiles").insert(profile_data).execute()
-        return profile_data
-        
-    return res.data
-

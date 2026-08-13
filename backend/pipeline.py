@@ -1,7 +1,9 @@
+import uuid
+from datetime import datetime, timezone
 from backend.services.link_parser import parse_link
 from backend.services.gemini_client import clean_song_title
 from backend.services import youtube_client
-from backend.db import admin_client
+from backend.db_local import get_db
 
 def process_song_submission(url: str, user_id: str, playlist_id: str) -> dict:
     """
@@ -10,7 +12,7 @@ def process_song_submission(url: str, user_id: str, playlist_id: str) -> dict:
     2. Valida que sea de YouTube.
     3. Obtiene metadatos de YouTube y los limpia con Gemini.
     4. Añade a la playlist de YouTube.
-    5. Guarda el registro en Supabase.
+    5. Guarda el registro en la base de datos local SQLite.
     """
     parsed = parse_link(url)
     platform = parsed["platform"]
@@ -19,10 +21,8 @@ def process_song_submission(url: str, user_id: str, playlist_id: str) -> dict:
     if platform != "youtube" or not item_id:
         raise ValueError("El enlace proporcionado debe ser un link válido de YouTube o YouTube Music.")
         
-    artist = ""
-    song_title = ""
     youtube_video_id = item_id
-    art_url = f"https://img.youtube.com/vi/{item_id}/hqdefault.jpg" # Carátula nativa de YouTube en HQ!
+    art_url = f"https://img.youtube.com/vi/{item_id}/hqdefault.jpg"
     
     # 1. Obtener el título del video de YouTube
     yt_details = youtube_client.get_video_details(item_id)
@@ -33,40 +33,33 @@ def process_song_submission(url: str, user_id: str, playlist_id: str) -> dict:
     artist = cleaned["artist"]
     song_title = cleaned["song"]
     
-    # 3. Obtener el youtube_id real de la playlist
+    # 3. Obtener el youtube_id real de la playlist desde SQLite
     target_youtube_playlist_id = None
-    if admin_client:
-        pl_res = admin_client.table("playlists").select("youtube_id").eq("id", playlist_id).execute()
-        if pl_res.data and pl_res.data[0].get("youtube_id"):
-            target_youtube_playlist_id = pl_res.data[0]["youtube_id"]
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT youtube_id FROM playlists WHERE id = ?", (playlist_id,))
+        row = cursor.fetchone()
+        if row and row["youtube_id"]:
+            target_youtube_playlist_id = row["youtube_id"]
             
-    # 4. Añadir el video a la playlist de YouTube
+    # 4. Añadir el video a la playlist de YouTube si existe
     if target_youtube_playlist_id:
-        youtube_client.add_video_to_playlist(item_id, target_youtube_playlist_id)
-        
-    # Guardar en base de datos
-    song_record = {
-        "user_id": user_id,
-        "playlist_id": playlist_id,
-        "original_url": url,
-        "source_platform": "youtube",
-        "artist": artist,
-        "title": song_title,
-        "spotify_track_id": None,
-        "youtube_video_id": youtube_video_id,
-        "art_url": art_url
-    }
-    
-    if admin_client:
         try:
-            res = admin_client.table("songs").insert(song_record).execute()
-            if res.data:
-                return res.data[0]
-        except Exception as e:
-            print(f"❌ Error al guardar la canción en Supabase: {e}")
-            raise Exception("No se pudo guardar la canción en la base de datos.")
-            
-    # Fallback modo local/desarrollo
-    song_record["id"] = "dev-song-id"
-    song_record["created_at"] = "2026-07-09T00:00:00Z"
-    return song_record
+            youtube_client.add_video_to_playlist(item_id, target_youtube_playlist_id)
+        except Exception as yt_err:
+            print(f"⚠️ Error añadiendo a YouTube: {yt_err}")
+        
+    # 5. Guardar en base de datos local SQLite
+    song_id = str(uuid.uuid4())
+    now_iso = datetime.now(timezone.utc).isoformat()
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO songs (id, user_id, playlist_id, original_url, source_platform, artist, title, youtube_video_id, art_url, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (song_id, user_id, playlist_id, url, "youtube", artist, song_title, youtube_video_id, art_url, now_iso))
+        conn.commit()
+        
+        cursor.execute("SELECT * FROM songs WHERE id = ?", (song_id,))
+        return dict(cursor.fetchone())
