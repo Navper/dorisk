@@ -70,13 +70,28 @@ async def weekly_sweep_scheduler():
 async def start_scheduler():
     asyncio.create_task(weekly_sweep_scheduler())
 
+from fastapi.responses import FileResponse
+import os
+
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 @app.get("/")
 async def root():
+    index_path = os.path.join(root_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return {
         "status": "online",
         "app": "Dorisk",
         "description": "¡La canción del día está lista!"
     }
+
+@app.get("/{filename:path}")
+async def serve_static_files(filename: str):
+    file_path = os.path.join(root_dir, filename)
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
 
 if __name__ == "__main__":

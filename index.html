@@ -557,9 +557,9 @@
         // ════════════════════════════════════════
 
         // Cambia la URL de Render cuando lo despliegues
-        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '8000'
             ? 'http://localhost:8000'
-            : 'https://dorisk.onrender.com';
+            : (window.location.origin.includes('vercel.app') ? 'https://dorisk.onrender.com' : window.location.origin);
         let PLAYLISTS = [];
         let openPlaylistId = null;
 
