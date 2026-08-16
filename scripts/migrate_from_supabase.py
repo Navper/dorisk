@@ -17,17 +17,16 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 def run_migration():
-    print("🚀 INICIANDO MIGRACIÓN TOTAL DE SUPABASE A BASE DE DATOS LOCAL")
-    print("================================================================")
+    print("=== INICIANDO MIGRACION TOTAL DE SUPABASE A BASE DE DATOS LOCAL ===")
 
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        print("❌ Error: Faltan SUPABASE_URL o SUPABASE_SERVICE_KEY en backend/.env")
+        print("[ERROR] Faltan SUPABASE_URL o SUPABASE_SERVICE_KEY en backend/.env")
         return False
 
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     except Exception as e:
-        print(f"❌ Error conectando con Supabase: {e}")
+        print(f"[ERROR] conectando con Supabase: {e}")
         return False
 
     init_db()
@@ -38,7 +37,7 @@ def run_migration():
     # -------------------------------------------------------------
     # 1. MIGRAR USUARIOS Y PERFILES
     # -------------------------------------------------------------
-    print("\n📦 1/5 Migrando Usuarios y Perfiles...")
+    print("\n[1/5] Migrando Usuarios y Perfiles...")
     try:
         # Obtener perfiles de la tabla profiles
         prof_res = supabase.table("profiles").select("*").execute()
@@ -50,7 +49,7 @@ def run_migration():
             users_res = supabase.auth.admin.list_users()
             users = users_res if isinstance(users_res, list) else getattr(users_res, "users", [])
         except Exception as e:
-            print(f"⚠️ No se pudo listar auth.users directamente ({e}), usando tabla profiles...")
+            print(f"[WARN] No se pudo listar auth.users directamente ({e}), usando tabla profiles...")
 
         inserted_users = 0
         if users:
@@ -58,13 +57,13 @@ def run_migration():
                 user_id = u.id
                 email = u.email or f"user_{user_id[:8]}@dorisk.com"
                 prof = profiles_map.get(user_id, {})
-                username = prof.get("username") or u.user_metadata.get("username") or email.split("@")[0]
+                username = prof.get("username") or (u.user_metadata.get("username") if hasattr(u, "user_metadata") and u.user_metadata else None) or email.split("@")[0]
                 avatar_url = prof.get("avatar_url") or f"https://api.dicebear.com/7.x/pixel-art/svg?seed={username}"
                 is_approved = 1 if prof.get("is_approved", True) else 0
                 created_at = u.created_at if hasattr(u, "created_at") and u.created_at else "2026-01-01T00:00:00Z"
                 
                 # Usar hash por defecto seguro si no se tiene la clave en texto plano
-                pwd_hash = hash_password("dorisk2026") # Contraseña de reseteo inicial si aplica
+                pwd_hash = hash_password("dorisk2026")
 
                 cursor.execute("""
                     INSERT OR REPLACE INTO users (id, email, username, password_hash, avatar_url, is_approved, is_admin, created_at)
@@ -87,14 +86,14 @@ def run_migration():
                 """, (user_id, email, username, pwd_hash, avatar_url, is_approved, 0, str(created_at)))
                 inserted_users += 1
 
-        print(f"✅ {inserted_users} usuarios migrados con éxito.")
+        print(f"[OK] {inserted_users} usuarios migrados con exito.")
     except Exception as e:
-        print(f"❌ Error migrando usuarios: {e}")
+        print(f"[ERROR] migrando usuarios: {e}")
 
     # -------------------------------------------------------------
     # 2. MIGRAR PLAYLISTS
     # -------------------------------------------------------------
-    print("\n📦 2/5 Migrando Playlists...")
+    print("\n[2/5] Migrando Playlists...")
     try:
         pl_res = supabase.table("playlists").select("*").execute()
         playlists = pl_res.data or []
@@ -103,14 +102,14 @@ def run_migration():
                 INSERT OR REPLACE INTO playlists (id, name, youtube_id, created_by, created_at)
                 VALUES (?, ?, ?, ?, ?)
             """, (pl["id"], pl["name"], pl.get("youtube_id"), pl.get("created_by"), str(pl.get("created_at", ""))))
-        print(f"✅ {len(playlists)} playlists migradas.")
+        print(f"[OK] {len(playlists)} playlists migradas.")
     except Exception as e:
-        print(f"❌ Error migrando playlists: {e}")
+        print(f"[ERROR] migrando playlists: {e}")
 
     # -------------------------------------------------------------
     # 3. MIGRAR PERMISOS DE USUARIOS (playlist_users)
     # -------------------------------------------------------------
-    print("\n📦 3/5 Migrando Permisos de Playlists...")
+    print("\n[3/5] Migrando Permisos de Playlists...")
     try:
         pu_res = supabase.table("playlist_users").select("*").execute()
         pu_list = pu_res.data or []
@@ -119,14 +118,14 @@ def run_migration():
                 INSERT OR REPLACE INTO playlist_users (playlist_id, user_id)
                 VALUES (?, ?)
             """, (pu["playlist_id"], pu["user_id"]))
-        print(f"✅ {len(pu_list)} asignaciones de playlist migradas.")
+        print(f"[OK] {len(pu_list)} asignaciones de playlist migradas.")
     except Exception as e:
-        print(f"❌ Error migrando playlist_users: {e}")
+        print(f"[ERROR] migrando playlist_users: {e}")
 
     # -------------------------------------------------------------
     # 4. MIGRAR CANCIONES Y VOTOS
     # -------------------------------------------------------------
-    print("\n📦 4/5 Migrando Canciones y Votos...")
+    print("\n[4/5] Migrando Canciones y Votos...")
     try:
         songs_res = supabase.table("songs").select("*").execute()
         songs = songs_res.data or []
@@ -139,7 +138,7 @@ def run_migration():
                 s.get("source_platform", "youtube"), s.get("artist"), s.get("title"),
                 s.get("youtube_video_id"), s.get("art_url"), str(s.get("created_at", ""))
             ))
-        print(f"✅ {len(songs)} canciones migradas.")
+        print(f"[OK] {len(songs)} canciones migradas.")
 
         votes_res = supabase.table("votes").select("*").execute()
         votes = votes_res.data or []
@@ -148,14 +147,14 @@ def run_migration():
                 INSERT OR REPLACE INTO votes (song_id, user_id, score, created_at)
                 VALUES (?, ?, ?, ?)
             """, (v["song_id"], v["user_id"], v["score"], str(v.get("created_at", ""))))
-        print(f"✅ {len(votes)} votos migrados.")
+        print(f"[OK] {len(votes)} votos migrados.")
     except Exception as e:
-        print(f"❌ Error migrando canciones/votos: {e}")
+        print(f"[ERROR] migrando canciones/votos: {e}")
 
     # -------------------------------------------------------------
-    # 5. MIGRAR GANADORES HISTÓRICOS
+    # 5. MIGRAR GANADORES HISTORICOS
     # -------------------------------------------------------------
-    print("\n📦 5/5 Migrando Ganadores Semanales...")
+    print("\n[5/5] Migrando Ganadores Semanales...")
     try:
         ww_res = supabase.table("weekly_winners").select("*").execute()
         winners = ww_res.data or []
@@ -168,15 +167,15 @@ def run_migration():
                 w["artist"], w["submitted_by"], w["score"], w["trophy"],
                 w.get("art_url"), str(w.get("created_at", ""))
             ))
-        print(f"✅ {len(winners)} ganadores históricos migrados.")
+        print(f"[OK] {len(winners)} ganadores historicos migrados.")
     except Exception as e:
-        print(f"❌ Error migrando weekly_winners: {e}")
+        print(f"[ERROR] migrando weekly_winners: {e}")
 
     conn.commit()
     conn.close()
 
-    print("\n🎉 ¡MIGRACIÓN COMPLETADA CON ÉXITO!")
-    print(f"Todos los datos han sido guardados en el archivo local SQLite.")
+    print("\n[EXITO] MIGRACION COMPLETADA CON EXITO!")
+    print("Todos los datos han sido guardados en el archivo local SQLite.")
     return True
 
 if __name__ == "__main__":

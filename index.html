@@ -556,10 +556,10 @@
         // ── INTEGRACIÓN CON BACKEND (APIs)
         // ════════════════════════════════════════
 
-        // Cambia la URL de Render cuando lo despliegues
-        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '8000'
-            ? 'http://localhost:8000'
-            : (window.location.origin.includes('vercel.app') ? 'https://dorisk.onrender.com' : window.location.origin);
+        // Backend API URL (adaptativo a self-hosted y local)
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !['8000', '8050'].includes(window.location.port)
+            ? 'http://localhost:8050'
+            : window.location.origin;
         let PLAYLISTS = [];
         let openPlaylistId = null;
 
