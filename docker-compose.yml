@@ -6,7 +6,7 @@ services:
     container_name: dorisk_app
     restart: always
     ports:
-      - "8000:8000"
+      - "8050:8000"
     env_file:
       - backend/.env
     volumes:
