@@ -112,15 +112,18 @@ def init_db():
         conn.commit()
         
         # Auto-poblar datos migrados si la base de datos esta vacia
-        cursor.execute("SELECT count(*) FROM users")
-        user_count = cursor.fetchone()[0]
-        if user_count == 0:
-            seed_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "initial_seed.sql")
-            if os.path.exists(seed_file):
-                with open(seed_file, "r", encoding="utf-8") as f:
-                    cursor.executescript(f.read())
-                conn.commit()
-                print("[SEED] Base de datos auto-poblada con exito desde initial_seed.sql")
+        try:
+            cursor.execute("SELECT count(*) FROM users")
+            user_count = cursor.fetchone()[0]
+            if user_count == 0:
+                seed_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "initial_seed.sql")
+                if os.path.exists(seed_file):
+                    with open(seed_file, "r", encoding="utf-8") as f:
+                        cursor.executescript(f.read())
+                    conn.commit()
+                    print("[SEED] Base de datos auto-poblada con exito desde initial_seed.sql")
+        except Exception as e:
+            print(f"[WARN] No se pudo auto-cargar initial_seed.sql: {e}")
         
         print("[OK] Base de datos local SQLite lista en:", DB_PATH)
 
