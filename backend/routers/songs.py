@@ -104,17 +104,16 @@ async def get_today_feed(user: AppUser = Depends(get_current_user)):
                     "songs": []
                 }
                 
-            # 2. Obtener canciones de estas playlists (últimos 7 días)
-            one_week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            # 2. Obtener TODAS las canciones de estas playlists (sin filtro temporal)
             placeholders = ",".join("?" * len(playlist_ids))
             
             cursor.execute(f"""
                 SELECT s.*, u.username, u.avatar_url
                 FROM songs s
                 LEFT JOIN users u ON s.user_id = u.id
-                WHERE s.playlist_id IN ({placeholders}) AND s.created_at >= ?
+                WHERE s.playlist_id IN ({placeholders})
                 ORDER BY s.created_at DESC
-            """, (*playlist_ids, one_week_ago))
+            """, playlist_ids)
             songs = cursor.fetchall()
             
             # 3. Obtener todos los votos de estas canciones
